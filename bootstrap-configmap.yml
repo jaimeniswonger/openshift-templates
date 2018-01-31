@@ -1,0 +1,12 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: bootstrap-config
+  namespace: dev-poc
+data: 
+  spring_cloud_config_uri: http://configuration-service:8888
+  spring_cloud_config_failFast: 'true'
+  spring_cloud_config_retry_initialInterval: '2000'
+  spring_cloud_config_retry_maxAttempts: '10'
+  spring_cloud_config_retry_maxInterval: '10000'
+  spring_cloud_config_retry_multiplier: '3'
