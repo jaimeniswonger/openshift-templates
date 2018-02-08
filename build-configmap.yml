@@ -1,0 +1,7 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: build-config
+  namespace: dev-poc
+data:
+  nexus_host: 'http://nexus3.ci-cd.svc:8081'
