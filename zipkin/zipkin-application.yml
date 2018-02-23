@@ -89,7 +89,7 @@ items:
       app: itweb-zipkin
     name: itweb-zipkin
   spec:
-    host: test.awsos1.americancentury.com
+    host: zipkin.awsos1.americancentury.com
     port:
       targetPort: 9411-tcp
     to:

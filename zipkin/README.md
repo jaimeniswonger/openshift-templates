@@ -1,25 +1,14 @@
-### To create Docker image (from this folder):
+### Create build configuration
 
-	docker build -t itweb-zipkin .
+	oc create -f zipkin-buildconfig.yml -n infra-poc
 
-### To push Docker image to OpenShift
 
-  1. Tag the image:
-  
-	docker tag itweb-zipkin registry.awsos1.americancentury.com/infra-poc/itweb-zipkin
-		
-  2. Login to Openshift as admin:
-  
-	oc login https://awsos1.americancentury.com:8443
-  		
-  3. Login to Registry:
-  
-	docker login -u admin -p $(oc whoami -t) registry.awsos1.americancentury.com
-      	
-  4. Push the image:
-  
-	docker push registry.awsos1.americancentury.com/infra-poc/itweb-zipkin       	
+### Create zipkin application
 
-### To create zipkin application on Openshift
+	oc create -f zipkin-application.yml -n infra-poc 
+	
+### Start Build
 
-	oc create -f zipkin-template.yml -n infra-poc 
+	oc start-build itweb-zipkin -n infra-poc
+	
+#### Note: The deployment will start automatically after the build is complete.		
