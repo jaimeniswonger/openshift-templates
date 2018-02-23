@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ImageStream
+metadata:
+  annotations:
+    role: jenkins-slave
+    slave-label: dotnet
+  labels:
+    role: jenkins-slave
+  name: dotnet-20-jenkins-slave-rhel7
+  namespace: dotnet-poc
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+    - annotations: null
+      from:
+        kind: DockerImage
+        name: registry.access.redhat.com/dotnet/dotnet-20-jenkins-slave-rhel7
+      generation: 1
+      importPolicy: {}
+      name: latest
+      referencePolicy:
+        type: Source
+status: {}
