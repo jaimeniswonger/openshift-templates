@@ -4,13 +4,10 @@ metadata:
   creationTimestamp: null
   name: pact-broker
 objects:
+# IMAGE STREAM
 - apiVersion: v1
   kind: ImageStream
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftWebConsole
-    creationTimestamp: null
-    generation: 1
     labels:
       app: pact-broker
     name: pact-broker
@@ -29,12 +26,10 @@ objects:
         type: ""
   status:
     dockerImageRepository: ""
+# BUILD CONFIG    
 - apiVersion: v1
   kind: BuildConfig
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftWebConsole
-    creationTimestamp: null
     labels:
       app: pact-broker
     name: pact-broker
@@ -72,13 +67,10 @@ objects:
     - type: ConfigChange
   status:
     lastVersion: 0
+# DEPLOYMENT CONFIG    
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftWebConsole
-    creationTimestamp: null
-    generation: 1
     labels:
       app: pact-broker
     name: pact-broker
@@ -108,11 +100,10 @@ objects:
           - name: PACT_BROKER_DATABASE_USERNAME
             value: pact_broker
           - name: PACT_BROKER_DATABASE_PASSWORD
-            value: pact_broker
-#            valueFrom:
-#              secretKeyRef:
-#                key: password
-#                name: postgres-pact-broker-secret            
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: postgresql-pact-broker-secret            
           - name: PACT_BROKER_DATABASE_HOST
             value: postgresql-pact-broker
           - name: PACT_BROKER_DATABASE_NAME
@@ -149,12 +140,10 @@ objects:
     replicas: 0
     unavailableReplicas: 0
     updatedReplicas: 0
+# SERVICE    
 - apiVersion: v1
   kind: Service
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftWebConsole
-    creationTimestamp: null
     labels:
       app: pact-broker
     name: pact-broker
@@ -242,11 +231,10 @@ objects:
           - name: POSTGRESQL_USER
             value: pact_broker
           - name: POSTGRESQL_PASSWORD
-            value: pact_broker
-#            valueFrom:
-#              secretKeyRef:
-#                key: password
-#                name: postgres-pact-broker-secret            
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: postgresql-pact-broker-secret
           - name: POSTGRESQL_DATABASE
             value: pact_broker
           image: ' '
@@ -308,25 +296,14 @@ objects:
     - type: ConfigChange
 # SECRETS
 - apiVersion: v1
-  kind: Secret
   metadata:
-    annotations:
-#      template.openshift.io/expose-database_name: '{.data[''database-name'']}'
-      template.openshift.io/expose-password: '{.data[''database-password'']}'
-#      template.openshift.io/expose-username: '{.data[''database-user'']}'
-    name: 'postgres-pact-broker-secret'
+    name: postgresql-pact-broker-secret
+    labels:
+      app: pact-broker
   stringData:
-#    database-name: '${POSTGRESQL_DATABASE}'
-    password: '${POSTGRESQL_PASSWORD}'
-#    database-user: '${POSTGRESQL_USER}'    
-#- apiVersion: v1
-#  data:
-#    password: ${POSTGRESQL_PASSWORD}
-#  kind: Secret
-#  metadata:
-#    labels:
-#      app: pact-broker
-#    name: postgres-pact-broker-secret
+    password: ${POSTGRESQL_PASSWORD}
+  kind: Secret
+# PARAMETERS  
 parameters:
   - description: Password for the PostgreSQL connection user.
     displayName: PostgreSQL Connection Password
