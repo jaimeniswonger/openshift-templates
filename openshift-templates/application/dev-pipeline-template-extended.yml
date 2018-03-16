@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: dev-pipeline-extended
+  annotations:
+    description: A template for creating development pipelines for ITWEB
+    iconClass: icon-jenkins
+    tags: pipeline, jenkins, git, itweb
+objects:
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${APP_NAME}-pipeline-dev
+    labels:
+      app: ${APP_NAME}    
+  spec:
+    runPolicy: Serial
+    source:
+      type: Git
+      git:
+        uri: ${GIT_URL}
+        ref: ${GIT_REF}
+      sourceSecret:
+        name: ${GIT_SECRET}
+    strategy:
+      jenkinsPipelineStrategy:
+        jenkinsfile: "node('maven') {\r\n  stage('Fetch Source') {\r\n  \tgit credentialsId: 'ci-cd-git-secret', branch: '${GIT_REF}', url: '${GIT_URL}'\r\n  }\r\n\r\n  stage('Unit Testing') {\r\n           configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {\r\n\t  sh \"mvn -s $MAVEN_SETTINGS clean test -P unit-tests\"\r\n    }\r\n  }\r\n  \r\n   stage('Integration Testing') {\r\n     configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {\r\n \t  sh \"mvn -s $MAVEN_SETTINGS test -P integration-tests\"\r\n     }\r\n   }  \r\n  \r\n  stage('Quality Analysis') {\r\n    configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {\r\n      sh \"mvn -s $MAVEN_SETTINGS sonar:sonar\"\r\n    }  \r\n  }\r\n  \r\n  stage('Build Application') {\r\n    configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {\r\n\t  sh \"mvn -s $MAVEN_SETTINGS deploy -DskipTests\"\r\n    }\r\n  }  \r\n  \r\n  stage('Build Image') {\r\n  \tdef pom = readMavenPom file: 'pom.xml'\r\n  \tdef groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()\r\n  \tdef artifactId = pom.getArtifactId()\r\n  \tdef version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()\r\n    openshiftBuild(namespace: '${DEV_NAMESPACE}', buildConfig: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:\"${groupId}\"], [name:'MVN_ARTIFACTID', value:\"${artifactId}\"], [name:'MVN_VERSION', value:\"${version}\"]])\r\n    openshiftBuild(namespace: '${DEV_NAMESPACE}', buildConfig: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:\"${groupId}\"], [name:'MVN_ARTIFACTID', value:\"${artifactId}\"], [name:'MVN_VERSION', value:\"${version}\"]])\r\n  }\r\n  \r\n  stage('Deploy') {\r\n    openshiftDeploy(namespace: '${DEV_NAMESPACE}', deploymentConfig: '${APP_NAME}')  \r\n  }\r\n  \r\n  stage('Contract Testing') {\r\n    configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {\r\n\t  sh \"mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host=footnote-service.dev-poc.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080\"\r\n    }\r\n  }  \r\n}"        
+      type: JenkinsPipeline
+    triggers:
+      - generic:
+          secret: ${APP_NAME}-dev
+        type: Generic
+# PARAMETERS    
+parameters:
+- description: The name of the new application
+  displayName: Application Name
+  name: APP_NAME
+  required: true
+- description: The URL of the Git repository
+  displayName: Git URL
+  name: GIT_URL
+  required: true
+- description: The Git branch/tag reference
+  displayName: Git branch/tag reference
+  name: GIT_REF
+  value: master
+  required: true
+- description: The name of the Dev Namespace
+  displayName: Dev Name Space
+  name: DEV_NAMESPACE
+  value: dev-poc
+  required: true  
+- description: The secret containing Git credentials
+  displayName: Git Credentials Secret
+  name: GIT_SECRET
+  value: git-secret
+  required: true
+- description: The path to the Jenkinsfile
+  displayName: Jenkinsfile Path
+  name: JENKINS_FILE_PATH
+  required: true
+  value: Jenkinsfile
