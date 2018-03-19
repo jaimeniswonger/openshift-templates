@@ -180,7 +180,7 @@ objects:
                 protocol: TCP
             resources: 
               requests: 
-                cpu: 100m
+                cpu: ${MIN_CPU}
                 memory: ${MIN_MEM}
               limits:
                 cpu: ${MAX_CPU}

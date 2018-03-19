@@ -90,7 +90,13 @@ objects:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
-          resources: {}
+          resources: 
+              requests: 
+                cpu: ${MIN_CPU}
+                memory: ${MIN_MEM}
+              limits:
+                cpu: ${MAX_CPU}
+                memory: ${MAX_MEM}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         dnsPolicy: ClusterFirst
@@ -169,3 +175,23 @@ parameters:
   name: ACTIVE_PROFILE
   value: qa
   required: true
+- description: Minimum CPU
+  displayName: Minimum CPU
+  name: MIN_CPU
+  value: 100m
+  required: true    
+- description: Minimum Memory
+  displayName: Minimum Memory
+  name: MIN_MEM
+  value: 128Mi
+  required: true    
+- description: Maximum CPU
+  displayName: Maximum CPU
+  name: MAX_CPU
+  value: 200m
+  required: true    
+- description: Maximum Memory
+  displayName: Maximum Memory
+  name: MAX_MEM
+  value: 256Mi
+  required: true    
