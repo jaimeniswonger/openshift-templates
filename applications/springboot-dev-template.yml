@@ -270,7 +270,7 @@ parameters:
 - description: Maximum CPU
   displayName: Maximum CPU
   name: MAX_CPU
-  value: 1c
+  value: 1000m
   required: true    
 - description: Maximum Memory
   displayName: Maximum Memory
