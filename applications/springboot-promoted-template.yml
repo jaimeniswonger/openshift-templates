@@ -178,12 +178,10 @@ parameters:
 - description: Minimum CPU
   displayName: Minimum CPU
   name: MIN_CPU
-  value: 
   required: false    
 - description: Minimum Memory
   displayName: Minimum Memory
   name: MIN_MEM
-  value: 
   required: false    
 - description: Maximum CPU
   displayName: Maximum CPU
