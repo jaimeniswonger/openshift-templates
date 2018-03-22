@@ -263,19 +263,19 @@ parameters:
   displayName: Minimum CPU
   name: MIN_CPU
   value: 300m
-  required: true    
+  required: true
 - description: Minimum Memory
   displayName: Minimum Memory
   name: MIN_MEM
   value: 1Gi
-  required: true    
+  required: true
 - description: Maximum CPU
   displayName: Maximum CPU
   name: MAX_CPU
   value: 900m
-  required: true    
+  required: true
 - description: Maximum Memory
   displayName: Maximum Memory
   name: MAX_MEM
   value: 2Gi
-  required: true    
+  required: true
