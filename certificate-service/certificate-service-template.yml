@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: spring-boot-development
+  name: certificate-service
   labels:
-    env: dev
+    env: infra
   annotations:
-    description: A Template for deploying Spring Boot applications to the Development Environment
+    description: A Template for the certificate service
     iconClass: icon-spring
     tags: spring-boot, spring-cloud, itweb, development
-    openshift.io/display-name: ITWEB - Spring Boot (Development)
+    openshift.io/display-name: ITWEB - Certificate Service
 objects:
 # IMAGE STREAM
 - apiVersion: v1
@@ -39,7 +39,7 @@ objects:
       name: 8-jre-alpine
       referencePolicy:
         type: Source
-# BUILD CONFIG - builder
+# BUILD CONFIG
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -60,7 +60,6 @@ objects:
         from:
           kind: ImageStreamTag
           name: springboot-s2i:latest
-          namespace: dev-poc
         env:
           - name: NEXUS_HOST
             value: http://nexus3.ci-cd.svc:8081
@@ -72,7 +71,6 @@ objects:
     - type: ConfigChange
     - type: ImageChange 
       imageChange: {}
-# BUILD CONFIG - runtime      
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -87,12 +85,9 @@ objects:
     source:
       type: Dockerfile
       dockerfile: |
-        FROM itweb-springboot-runtime
+        FROM openjdk:8-jre-alpine
         COPY application.jar /
-        RUN mkdir /certs
-        RUN chmod 777 /certs
-        RUN chown -R 1000080000:0 /certs
-        CMD ["sh", "/usr/local/bin/startup.sh"]
+        CMD java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -jar /application.jar
       images:
       - from:
           kind: ImageStreamTag
@@ -105,7 +100,7 @@ objects:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: 'itweb-springboot-runtime:latest'
+          name: openjdk:8-jre-alpine
 # DEPLOYMENT CONFIG
 - apiVersion: v1
   kind: DeploymentConfig
@@ -174,14 +169,7 @@ objects:
                 valueFrom:
                   configMapKeyRef:
                     key: spring_cloud_config_retry_multiplier
-                    name: bootstrap-config
-              - name: CERTIFICATE_SERVICE_HOST
-                valueFrom:
-                  configMapKeyRef:
-                    key: CERTIFICATE_SERVICE_HOST
-                    name: bootstrap-config
-              - name: CERTIFICATE_COMMON_NAME
-                value: ${APP_NAME}-itweb.americancentury.com                    
+                    name: bootstrap-config          
             name: ${APP_NAME}
             image: ${APP_NAME}
             ports:
@@ -242,10 +230,12 @@ parameters:
 - description: The name of the new application
   displayName: Application Name
   name: APP_NAME
+  value: certificate-service
   required: true
 - description: The URL of the Git repository
   displayName: Git URL
   name: GIT_URL
+  value: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
   required: true
 - description: The Git branch/tag reference
   displayName: Git branch/tag reference
