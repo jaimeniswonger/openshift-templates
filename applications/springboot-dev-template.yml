@@ -90,8 +90,7 @@ objects:
         FROM itweb-springboot-runtime
         COPY application.jar /
         RUN mkdir /certs
-        RUN chmod 777 /certs
-        RUN chown -R 1000080000:0 /certs
+        RUN chmod a+rw /certs
         CMD ["sh", "/usr/local/bin/startup.sh"]
       images:
       - from:
