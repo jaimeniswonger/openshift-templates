@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: dev-pipeline-extended
+  name: itweb-release-pipeline
   annotations:
-    description: A template for creating development pipelines for ITWEB
+    description: A template for creating release (QA) pipelines for ITWEB
     iconClass: icon-jenkins
     tags: pipeline, jenkins, git, itweb
 objects:
@@ -11,7 +11,7 @@ objects:
 - apiVersion: v1
   kind: BuildConfig
   metadata:
-    name: ${APP_NAME}-pipeline-dev
+    name: ${APP_NAME}-pipeline-release
     labels:
       app: ${APP_NAME}    
   spec:
@@ -33,13 +33,13 @@ objects:
             
             stage('Unit Testing') {
               configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh \"mvn -s $MAVEN_SETTINGS clean test -P unit-tests\"
+                sh("mvn -s $MAVEN_SETTINGS clean test -P unit-tests")
               }
             }
             
             stage('Integration Testing') {
               configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh \"mvn -s $MAVEN_SETTINGS test -P integration-tests\"
+                sh("mvn -s $MAVEN_SETTINGS test -P integration-tests")
               }
             }
             
@@ -63,13 +63,13 @@ objects:
             
             stage('Quality Analysis') {
               configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh \"mvn -s $MAVEN_SETTINGS sonar:sonar\"
+                sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
               }
             }
             
             stage('Build Application') {
               configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh \"mvn -s $MAVEN_SETTINGS deploy -DskipTests\"
+                sh("mvn -s $MAVEN_SETTINGS deploy -DskipTests")
               }
             }
             
@@ -84,51 +84,51 @@ objects:
                 returnStdout: true
               ).trim()
               
-              openshiftBuild(namespace: '${DEV_NAMESPACE}', buildConfig: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:\"${groupId}\"], [name:'MVN_ARTIFACTID', value:\"${artifactId}\"], [name:'MVN_VERSION', value:\"${version}\"]])
-              openshiftBuild(namespace: '${DEV_NAMESPACE}', buildConfig: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:\"${groupId}\"], [name:'MVN_ARTIFACTID', value:\"${artifactId}\"], [name:'MVN_VERSION', value:\"${version}\"]])
+              openshiftBuild(namespace: '${QA_NAMESPACE}', buildConfig: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+              openshiftBuild(namespace: '${QA_NAMESPACE}', buildConfig: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
             }
             
             stage('Tag Source') {
               def imageSHA;
               openshift.withCluster() {
-                openshift.withProject('${DEV_NAMESPACE}') {
-                  // def istag = openshift.selector( \"istag/${APP_NAME}:latest\" ).object();
+                openshift.withProject('${QA_NAMESPACE}') {
+                  // def istag = openshift.selector( "istag/${APP_NAME}:latest" ).object();
                   // this is not ideal - would be nice to figure out how to get the istag directly
-                  def imageStream = openshift.selector( \"is/${APP_NAME}\" ).object();
+                  def imageStream = openshift.selector( "is/${APP_NAME}" ).object();
                   imageSHA = imageStream.status.tags[0].items[0].image.substring(7)
-                  echo \"${imageSHA}\"
+                  echo "${imageSHA}"
                 }
               }
               
               // we should be using ssh here
               // Need these set for tag and push -- how should we set these?
-              sh(\"git config --global user.name 'awsos1.americancentury.com'\")
-              sh(\"git config --global user.email 'awsos1@americancentury.com'\")
+              sh("git config --global user.name 'awsos1.americancentury.com'")
+              sh("git config --global user.email 'awsos1@americancentury.com'")
               
               def gitURL = '${GIT_URL}'
               def splitURL = gitURL.split(/\\/\\//)
               def protocol = splitURL[0]
               def gitHost = splitURL[1]
               withCredentials([usernamePassword(credentialsId: 'ci-cd-git-secret', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                sh(\"git tag -a \" + imageSHA + \" -m 'image built'\")
-                sh(\"git push \" + protocol + \"//${GIT_USERNAME}:${GIT_PASSWORD}@\" + gitHost + \" --tags\")
+                sh("git tag -a " + imageSHA + " -m 'image built'")
+                sh("git push " + protocol + "//${GIT_USERNAME}:${GIT_PASSWORD}@" + gitHost + " --tags")
               }
             }
             
             stage('Deploy') {
-              openshiftDeploy(namespace: '${DEV_NAMESPACE}', deploymentConfig: '${APP_NAME}')
+              openshiftDeploy(namespace: '${QA_NAMESPACE}', deploymentConfig: '${APP_NAME}')
             }
             
             stage('Contract Testing') {
               configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh \"mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host=${APP_NAME}.${DEV_NAMESPACE}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080\"
+                sh("mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host=${APP_NAME}.${QA_NAMESPACE}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080")
               }
             }
           }                
       type: JenkinsPipeline
     triggers:
       - generic:
-          secret: ${APP_NAME}-dev
+          secret: ${APP_NAME}-release
         type: Generic
 # PARAMETERS    
 parameters:
@@ -143,12 +143,11 @@ parameters:
 - description: The Git branch/tag reference
   displayName: Git branch/tag reference
   name: GIT_REF
-  value: master
   required: true
-- description: The name of the Dev Namespace
-  displayName: Dev Name Space
-  name: DEV_NAMESPACE
-  value: dev-poc
+- description: The name of the QA Namespace
+  displayName: QA Name Space
+  name: QA_NAMESPACE
+  value: qa-poc
   required: true  
 - description: The secret containing Git credentials
   displayName: Git Credentials Secret

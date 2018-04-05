@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: itweb-develop-pipeline
+  annotations:
+    description: A template for creating development pipelines for ITWEB
+    iconClass: icon-jenkins
+    tags: pipeline, jenkins, git, itweb
+objects:
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${APP_NAME}-pipeline-develop
+    labels:
+      app: ${APP_NAME}    
+  spec:
+    runPolicy: Serial
+    source:
+      type: Git
+      git:
+        uri: ${GIT_URL}
+        ref: ${GIT_REF}
+      sourceSecret:
+        name: ${GIT_SECRET}
+    strategy:
+      jenkinsPipelineStrategy:
+        jenkinsfile: >
+          node('maven') {
+            stage('Fetch Source') {
+              git credentialsId: 'ci-cd-git-secret', branch: '${GIT_REF}', url: '${GIT_URL}'
+            }
+            
+            stage('Unit Testing') {
+              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                sh("mvn -s $MAVEN_SETTINGS clean test -P unit-tests")
+              }
+            }
+            
+            stage('Integration Testing') {
+              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                sh("mvn -s $MAVEN_SETTINGS test -P integration-tests")
+              }
+            }
+            
+            stage('Quality Analysis') {
+              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
+              }
+            }
+            
+            stage('Build Application') {
+              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                sh("mvn -s $MAVEN_SETTINGS deploy -DskipTests")
+              }
+            }
+            
+            stage('Build Image') {
+              def pom = readMavenPom file: 'pom.xml'
+              def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
+              def artifactId = pom.getArtifactId()
+              //def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
+              // USE THE GIT COMMIT ID AS THE VERSION
+              def version = sh (
+                script: 'git rev-parse --short=10 HEAD',
+                returnStdout: true
+              ).trim()
+              
+              openshiftBuild(namespace: '${DEV_NAMESPACE}', buildConfig: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+              openshiftBuild(namespace: '${DEV_NAMESPACE}', buildConfig: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+            }
+            
+            stage('Deploy') {
+              openshiftDeploy(namespace: '${DEV_NAMESPACE}', deploymentConfig: '${APP_NAME}')
+            }
+            
+            stage('Checkmarx Scan') {
+              step([$class: 'CxScanBuilder',
+                    credentialsId: 'aca1b52b-9419-45bc-87b0-3cc0a83bd41e',
+                    excludeOpenSourceFolders: '',
+                    exclusionsSetting: 'global',
+                    failBuildOnNewResults: false,
+                    failBuildOnNewSeverity: 'HIGH',
+                    fullScanCycle: 10,
+                    groupId: '67d89c60-4c9a-4f6d-8f90-7f819e27f89c',
+                    includeOpenSourceFolders: '',
+                    osaArchiveIncludePatterns: '*.zip, *.war, *.ear, *.tgz',
+                    preset: '36',
+                    projectName: '${APP_NAME}',
+                    sourceEncoding: '1',
+                    vulnerabilityThresholdResult: 'FAILURE',
+                    waitForResultsEnabled: true])
+            }
+
+            stage('Contract Testing') {
+              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                sh("mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host=${APP_NAME}.${DEV_NAMESPACE}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080")
+              }
+            }
+          }                
+      type: JenkinsPipeline
+    triggers:
+      - generic:
+          secret: ${APP_NAME}-dev
+        type: Generic
+# PARAMETERS    
+parameters:
+- description: The name of the new application
+  displayName: Application Name
+  name: APP_NAME
+  required: true
+- description: The URL of the Git repository
+  displayName: Git URL
+  name: GIT_URL
+  required: true
+- description: The Git branch/tag reference
+  displayName: Git branch/tag reference
+  name: GIT_REF
+  value: develop
+  required: true
+- description: The name of the Dev Namespace
+  displayName: Dev Name Space
+  name: DEV_NAMESPACE
+  value: dev-poc
+  required: true  
+- description: The secret containing Git credentials
+  displayName: Git Credentials Secret
+  name: GIT_SECRET
+  value: git-secret
+  required: true
+- description: The path to the Jenkinsfile
+  displayName: Jenkinsfile Path
+  name: JENKINS_FILE_PATH
+  required: true
+  value: Jenkinsfile
