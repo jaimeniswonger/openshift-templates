@@ -39,7 +39,10 @@ items:
     postCommit: {}
     resources: {}
     runPolicy: Serial
-    triggers: []
+    triggers:
+      - generic:
+          secret: itweb-jenkins
+        type: Generic
 # IMAGE STREAM -- itweb-jenkins    
 - apiVersion: v1
   kind: ImageStream
