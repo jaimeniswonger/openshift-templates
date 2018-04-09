@@ -26,25 +26,39 @@ objects:
     strategy:
       jenkinsPipelineStrategy:
         jenkinsfile: >
-          node('maven') {
-            stage('Fetch Source') {
-              git credentialsId: 'ci-cd-git-secret', branch: '${GIT_REF}', url: '${GIT_URL}'
-            }
-            
-            stage('Unit Testing') {
-              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh("mvn -s $MAVEN_SETTINGS clean test -P unit-tests")
+          pipeline {
+            agent { node { label 'maven' } }
+            stages {
+              stage('Fetch Source') {
+                steps {
+                  git credentialsId: 'ci-cd-git-secret', branch: '${GIT_REF}', url: '${GIT_URL}'
+                }
               }
-            }
-            
-            stage('Integration Testing') {
-              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh("mvn -s $MAVEN_SETTINGS test -P integration-tests")
+              
+              stage('Run Tests') {
+                parallel {
+              
+                  stage('Unit Testing') {
+                    steps {
+                      configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh("mvn -s $MAVEN_SETTINGS clean test -P unit-tests")
+                      }
+                    }
+                  }
+          
+                  stage('Integration Testing') {
+                    steps {
+                      configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh("mvn -s $MAVEN_SETTINGS test -P integration-tests")
+                      }
+                    }
+                  }   
+                }
               }
-            }
-            
-            stage('Checkmarx Scan') {
-              step([$class: 'CxScanBuilder',
+              
+              stage('Checkmarx Scan') {
+                steps {
+                  step([$class: 'CxScanBuilder',
                     credentialsId: 'aca1b52b-9419-45bc-87b0-3cc0a83bd41e',
                     excludeOpenSourceFolders: '',
                     exclusionsSetting: 'global',
@@ -59,72 +73,92 @@ objects:
                     sourceEncoding: '1',
                     vulnerabilityThresholdResult: 'FAILURE',
                     waitForResultsEnabled: true])
-            }
-            
-            stage('Quality Analysis') {
-              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
-              }
-            }
-            
-            stage('Build Application') {
-              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh("mvn -s $MAVEN_SETTINGS deploy -DskipTests")
-              }
-            }
-            
-            stage('Build Image') {
-              def pom = readMavenPom file: 'pom.xml'
-              def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
-              def artifactId = pom.getArtifactId()
-              //def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
-              // USE THE GIT COMMIT ID AS THE VERSION
-              def version = sh (
-                script: 'git rev-parse --short=10 HEAD',
-                returnStdout: true
-              ).trim()
-              
-              openshiftBuild(namespace: '${QA_NAMESPACE}', buildConfig: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
-              openshiftBuild(namespace: '${QA_NAMESPACE}', buildConfig: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
-            }
-            
-            stage('Tag Source') {
-              def imageSHA;
-              openshift.withCluster() {
-                openshift.withProject('${QA_NAMESPACE}') {
-                  // def istag = openshift.selector( "istag/${APP_NAME}:latest" ).object();
-                  // this is not ideal - would be nice to figure out how to get the istag directly
-                  def imageStream = openshift.selector( "is/${APP_NAME}" ).object();
-                  imageSHA = imageStream.status.tags[0].items[0].image.substring(7)
-                  echo "${imageSHA}"
                 }
               }
               
-              // we should be using ssh here
-              // Need these set for tag and push -- how should we set these?
-              sh("git config --global user.name 'awsos1.americancentury.com'")
-              sh("git config --global user.email 'awsos1@americancentury.com'")
+              stage('Quality Analysis') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
+                  }
+                }
+              }              
               
-              def gitURL = '${GIT_URL}'
-              def splitURL = gitURL.split(/\\/\\//)
-              def protocol = splitURL[0]
-              def gitHost = splitURL[1]
-              withCredentials([usernamePassword(credentialsId: 'ci-cd-git-secret', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                sh("git tag -a " + imageSHA + " -m 'image built'")
-                sh("git push " + protocol + "//${GIT_USERNAME}:${GIT_PASSWORD}@" + gitHost + " --tags")
+              stage('Build Application') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS deploy -DskipTests")
+                  }
+                }
+              }
+          
+              stage('Build Image') {
+                steps {
+                  script {
+                    def pom = readMavenPom file: 'pom.xml'
+                    def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
+                    def artifactId = pom.getArtifactId()
+                    //def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
+                    
+                    // USE THE GIT COMMIT ID AS THE VERSION
+                    def version = sh (
+                      script: 'git rev-parse --short=10 HEAD',
+                      returnStdout: true
+                    ).trim()
+                  
+                    openshiftBuild(namespace: '${QA_NAMESPACE}', bldCfg: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                    openshiftBuild(namespace: '${QA_NAMESPACE}', bldCfg: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                  }
+                }
+              }
+              
+              stage('Tag Source') {
+                steps {
+                  script {
+                    def imageSHA;
+                    openshift.withCluster() {
+                      openshift.withProject('${QA_NAMESPACE}') {
+                        // def istag = openshift.selector( "istag/${APP_NAME}:latest" ).object();
+                        // this is not ideal - would be nice to figure out how to get the istag directly
+                        def imageStream = openshift.selector( "is/${APP_NAME}" ).object();
+                        imageSHA = imageStream.status.tags[0].items[0].image.substring(7)
+                        echo "${imageSHA}"
+                      }
+                    }
+              
+                    // we should be using ssh here
+                    // Need these set for tag and push -- how should we set these?
+                    sh("git config --global user.name 'awsos1.americancentury.com'")
+                    sh("git config --global user.email 'awsos1@americancentury.com'")
+                
+                    def gitURL = '${GIT_URL}'
+                    def splitURL = gitURL.split(/\\/\\//)
+                    def protocol = splitURL[0]
+                    def gitHost = splitURL[1]
+                    withCredentials([usernamePassword(credentialsId: 'ci-cd-git-secret', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                      sh("git tag -a " + imageSHA + " -m 'image built'")
+                      sh("git push " + protocol + "//${GIT_USERNAME}:${GIT_PASSWORD}@" + gitHost + " --tags")
+                    }
+                  }
+                }
+              }              
+          
+              stage('Deploy') {
+                steps {
+                  openshiftDeploy(namespace: '${QA_NAMESPACE}', depCfg: '${APP_NAME}')
+                }
+              }
+          
+         
+              stage('Contract Testing') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host=${APP_NAME}.${QA_NAMESPACE}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080")
+                  }
+                }
               }
             }
-            
-            stage('Deploy') {
-              openshiftDeploy(namespace: '${QA_NAMESPACE}', deploymentConfig: '${APP_NAME}')
-            }
-            
-            stage('Contract Testing') {
-              configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
-                sh("mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host=${APP_NAME}.${QA_NAMESPACE}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080")
-              }
-            }
-          }                
+          }
       type: JenkinsPipeline
     triggers:
       - generic:
