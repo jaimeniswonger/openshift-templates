@@ -45,7 +45,7 @@ objects:
     source:
       contextDir: /pact_broker
       git:
-        ref: master
+        ref: 2.16.1-3
         uri: https://github.com/DiUS/pact_broker-docker.git
       type: Git
     strategy:
