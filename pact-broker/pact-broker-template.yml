@@ -114,7 +114,13 @@ objects:
           ports:
           - containerPort: 8080
             protocol: TCP
-          resources: {}
+          resources: 
+            requests: 
+              cpu: ${MIN_CPU}
+              memory: ${MIN_MEM}
+            limits:
+              cpu: ${MAX_CPU}
+              memory: ${MAX_MEM}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         dnsPolicy: ClusterFirst
@@ -310,4 +316,24 @@ parameters:
     from: '[a-zA-Z0-9]{16}'
     generate: expression
     name: POSTGRESQL_PASSWORD
+    required: true
+  - description: Minimum CPU
+    displayName: Minimum CPU
+    name: MIN_CPU
+    value: 300m
+    required: true
+  - description: Minimum Memory
+    displayName: Minimum Memory
+    name: MIN_MEM
+    value: 1Gi
+    required: true
+  - description: Maximum CPU
+    displayName: Maximum CPU
+    name: MAX_CPU
+    value: 900m
+    required: true  
+  - description: Maximum Memory
+    displayName: Maximum Memory
+    name: MAX_MEM
+    value: 2Gi
     required: true
