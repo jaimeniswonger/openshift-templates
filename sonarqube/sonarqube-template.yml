@@ -6,7 +6,16 @@ metadata:
     tags: instant-app,sonarqube
   name: sonarqube
 message: "Login to SonarQube with the default admin user: admin/admin"
+# PARAMETERS
+parameters:
+- description: Password for SonarQube Server PostgreSQL backend
+  displayName: SonarQube's PostgreSQL Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: POSTGRESQL_PASSWORD
+  required: true
 objects:
+# SERVICES
 - apiVersion: v1
   kind: Service
   metadata:
@@ -25,6 +34,24 @@ objects:
     sessionAffinity: None
     type: ClusterIP
 - apiVersion: v1
+  kind: Service
+  metadata:
+    name: postgresql-sonarqube
+    labels:
+      app: sonarqube
+  spec:
+    ports:
+    - name: postgresql
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      app: sonarqube
+      deploymentconfig: postgresql-sonarqube
+    sessionAffinity: None
+    type: ClusterIP
+# ROUTE
+- apiVersion: v1
   kind: Route
   metadata:
     annotations:
@@ -37,6 +64,7 @@ objects:
     to:
       kind: Service
       name: sonarqube
+# IMAGE STREAMS
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -53,6 +81,60 @@ objects:
         name: owasp/sonarqube:latest
       importPolicy: {}
       name: latest
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+    labels:
+      app: sonarqube
+    name: itweb-sonarqube
+  spec:
+    tags:
+      - annotations:
+          description: The Sonarqube image for ITWEB
+          tags: itweb-sonarqube
+# BUILD CONFIGS
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: itweb-sonarqube
+    labels:
+      app: sonarqube
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: itweb-sonarqube:latest
+    source:
+      type: Dockerfile
+      dockerfile: |-
+        FROM owasp/sonarqube:latest
+        ENV SQ_CX_PLUGIN_VERSION=8.60.0 \
+            SQ_CX_SAST_VERSION=8.6.0
+        RUN set -x \
+         && cd $SONARQUBE_HOME/extensions/plugins/ \
+         && wget --no-verbose --no-check-certificate https://download.checkmarx.com/$SQ_CX_SAST_VERSION/Plugins/Sonar-$SQ_CX_PLUGIN_VERSION.zip \
+         && unzip Sonar-$SQ_CX_PLUGIN_VERSION.zip \
+         && rm Sonar-$SQ_CX_PLUGIN_VERSION.zip* \
+         && chmod -R 777 $SONARQUBE_HOME \
+         && chown -R sonarqube:sonarqube $SONARQUBE_HOME
+         
+         ENTRYPOINT ["./bin/run.sh"]
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: sonarqube:latest
+        env:
+        - name: SQ_CX_PLUGIN_VERSION
+          value: 8.60.0
+        - name: SQ_CX_SAST_VERSION
+          value: 8.6.0
+    triggers:
+    - type: ImageChange
+      imageChange: {}
+# DEPLOYMENT CONFIGS
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
@@ -91,8 +173,8 @@ objects:
             value: jdbc:postgresql://postgresql-sonarqube/sonar
           - name: SONARQUBE_JDBC_USERNAME
             value: sonar
-          image: ' '
-          imagePullPolicy: IfNotPresent
+          image: itweb-sonarqube:latest
+          imagePullPolicy: Always
           name: sonarqube
           ports:
           - containerPort: 9000
@@ -143,25 +225,8 @@ objects:
         - sonarqube
         from:
           kind: ImageStreamTag
-          name: sonarqube:latest
+          name: itweb-sonarqube:latest
       type: ImageChange
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: postgresql-sonarqube
-    labels:
-      app: sonarqube
-  spec:
-    ports:
-    - name: postgresql
-      port: 5432
-      protocol: TCP
-      targetPort: 5432
-    selector:
-      app: sonarqube
-      deploymentconfig: postgresql-sonarqube
-    sessionAffinity: None
-    type: ClusterIP
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
@@ -250,40 +315,3 @@ objects:
           namespace: openshift
       type: ImageChange
     - type: ConfigChange
-#- apiVersion: v1
-#  kind: PersistentVolumeClaim
-#  metadata:
-#    name: postgresql-sonarqube-data
-#  spec:
-#    accessModes:
-#    - ReadWriteOnce
-#    resources:
-#      requests:
-#        storage: ${POSTGRESQL_VOLUME_CAPACITY}
-#- apiVersion: v1
-#  kind: PersistentVolumeClaim
-#  metadata:
-#    name: sonarqube-data
-#  spec:
-#    accessModes:
-#    - ReadWriteOnce
-#    resources:
-#      requests:
-#        storage: ${SONAR_VOLUME_CAPACITY}
-parameters:
-- description: Password for SonarQube Server PostgreSQL backend
-  displayName: SonarQube's PostgreSQL Password
-  from: '[a-zA-Z0-9]{16}'
-  generate: expression
-  name: POSTGRESQL_PASSWORD
-  required: true
-#- description: Volume space available for PostgreSQL
-#  displayName: PostgreSQL Volume Capacity
-#  name: POSTGRESQL_VOLUME_CAPACITY
-#  required: true
-#  value: 1Gi
-#- description: Volume space available for SonarQube
-#  displayName: SonarQube Volume Capacity
-#  name: SONAR_VOLUME_CAPACITY
-#  required: true
-#  value: 1Gi
