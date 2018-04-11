@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: List
+items:
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: itweb-springboot-runtime
+  spec:
+    lookupPolicy:
+      local: false
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: itweb-springboot-runtime
+  spec:
+    strategy:
+      dockerStrategy:
+        from:
+          kind: DockerImage
+          name: 'openjdk:8-jre-alpine'
+      type: Docker
+    source:
+      git:
+        uri: "https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-docker-springboot-runtime"
+      sourceSecret:
+        name: git-secret
+      type: Dockerfile    
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'itweb-springboot-runtime:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers:
+      - generic:
+          secret: itweb-springboot-runtime
+        type: Generic
