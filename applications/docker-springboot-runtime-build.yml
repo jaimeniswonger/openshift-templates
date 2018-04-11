@@ -1,3 +1,9 @@
+####                                              
+#### CREATES THE itweb-springboot-runtime IMAGE STREAM AND BUILD CONFIG
+####    - This is the base image for all spring boot builds
+####    - The Git repo is: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-docker-springboot-runtime
+####        * Currently, no automated builds are triggered from changes from this repository
+####
 apiVersion: v1
 kind: List
 items:
