@@ -89,7 +89,13 @@ objects:
                   openshiftDeploy(namespace: '${DEV_NAMESPACE}', depCfg: '${APP_NAME}')
                 }
               }
-          
+              
+              stage('Nexus IQ') {
+                steps {
+                  nexusPolicyEvaluation failBuildOnNetworkError: false, iqApplication: 'itweb-poc-ms-${APP_NAME}', iqStage: 'build', jobCredentialsId: ''
+                }
+              }
+                  
               stage('Checkmarx Scan') {
                 steps {
                   step([$class: 'CxScanBuilder',
@@ -118,7 +124,7 @@ objects:
                 }
               }
               
-              stage('Quality Analysis') {
+              stage('SonarQube') {
                 steps {
                   configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
                     sh("mvn -s $MAVEN_SETTINGS sonar:sonar")

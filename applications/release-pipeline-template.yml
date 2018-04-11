@@ -56,27 +56,38 @@ objects:
                 }
               }
               
-              stage('Checkmarx Scan') {
-                steps {
-                  step([$class: 'CxScanBuilder',
-                    credentialsId: 'aca1b52b-9419-45bc-87b0-3cc0a83bd41e',
-                    excludeOpenSourceFolders: '',
-                    exclusionsSetting: 'global',
-                    failBuildOnNewResults: false,
-                    failBuildOnNewSeverity: 'HIGH',
-                    fullScanCycle: 10,
-                    groupId: '67d89c60-4c9a-4f6d-8f90-7f819e27f89c',
-                    includeOpenSourceFolders: '',
-                    osaArchiveIncludePatterns: '*.zip, *.war, *.ear, *.tgz',
-                    preset: '36',
-                    projectName: '${APP_NAME}',
-                    sourceEncoding: '1',
-                    vulnerabilityThresholdResult: 'FAILURE',
-                    waitForResultsEnabled: true])
+              stage('Quality Analysis') {
+                parallel {
+              
+                  stage('Nexus IQ') {
+                    steps {
+                      nexusPolicyEvaluation failBuildOnNetworkError: false, iqApplication: 'itweb-poc-ms-${APP_NAME}', iqStage: 'stage-release', jobCredentialsId: ''
+                    }
+                  }              
+              
+                  stage('Checkmarx Scan') {
+                    steps {
+                      step([$class: 'CxScanBuilder',
+                        credentialsId: 'aca1b52b-9419-45bc-87b0-3cc0a83bd41e',
+                        excludeOpenSourceFolders: '',
+                        exclusionsSetting: 'global',
+                        failBuildOnNewResults: false,
+                        failBuildOnNewSeverity: 'HIGH',
+                        fullScanCycle: 10,
+                        groupId: '67d89c60-4c9a-4f6d-8f90-7f819e27f89c',
+                        includeOpenSourceFolders: '',
+                        osaArchiveIncludePatterns: '*.zip, *.war, *.ear, *.tgz',
+                        preset: '36',
+                        projectName: '${APP_NAME}',
+                        sourceEncoding: '1',
+                        vulnerabilityThresholdResult: 'FAILURE',
+                        waitForResultsEnabled: true])
+                    }
+                  }
                 }
               }
               
-              stage('Quality Analysis') {
+              stage('Sonarqube') {
                 steps {
                   configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
                     sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
