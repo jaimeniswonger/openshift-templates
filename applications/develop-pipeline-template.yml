@@ -16,13 +16,6 @@ objects:
       app: ${APP_NAME}    
   spec:
     runPolicy: Serial
-    source:
-      type: Git
-      git:
-        uri: ${GIT_URL}
-        ref: ${GIT_REF}
-      sourceSecret:
-        name: ${GIT_SECRET}
     strategy:
       jenkinsPipelineStrategy:
         jenkinsfile: >
@@ -31,7 +24,7 @@ objects:
             stages {
               stage('Fetch Source') {
                 steps {
-                  git credentialsId: 'ci-cd-git-secret', branch: '${GIT_REF}', url: '${GIT_URL}'
+                  git credentialsId: '${GIT_CREDENTIALS}', url: '${GIT_URL}', branch: '${GIT_REF}'                   
                 }
               }
               
@@ -160,8 +153,8 @@ parameters:
   required: true  
 - description: The secret containing Git credentials
   displayName: Git Credentials Secret
-  name: GIT_SECRET
-  value: git-secret
+  name: GIT_CREDENTIALS
+  value: itweb-git-credentials
   required: true
 - description: The path to the Jenkinsfile
   displayName: Jenkinsfile Path
