@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: configuration-service-pipeline
+  labels:
+    app: configuration-service
+    env: infra
+  annotations:
+    pipeline.alpha.openshift.io/uses: '[{"name": "configuration-service", "namespace": "infra-poc", "kind": "DeploymentConfig"}]'
+spec:
+  runPolicy: Serial
+  strategy:
+    type: JenkinsPipeline
+    jenkinsPipelineStrategy:
+      jenkinsfile: >
+        pipeline {
+          agent { node { label 'maven' } }
+          stages {
+            stage('Fetch Source') {
+              steps {
+                git credentialsId: 'itweb-git-credentials', branch: 'develop', url: 'ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-config-service'
+              }
+            }
+  
+            stage('Maven Test & Deploy') {
+              steps {
+                configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                  sh("mvn -s $MAVEN_SETTINGS clean deploy")
+                }
+              }
+            }
+  
+            stage('Build Image') {
+              steps {
+                script {
+                  def pom = readMavenPom file: 'pom.xml'
+                  def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
+                  def artifactId = pom.getArtifactId()
+                  def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
+                  openshiftBuild(namespace: 'infra-poc', bldCfg: 'configuration-service-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                  openshiftBuild(namespace: 'infra-poc', bldCfg: 'configuration-service', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                }
+              }
+            }  
+    
+            stage('Deploy') {
+              steps {
+                openshiftDeploy(namespace: 'infra-poc', depCfg: 'configuration-service')  
+              } 
+            }
+          }
+        }
+  triggers:
+    - generic:
+        secret: configuration-service
+      type: Generic
