@@ -139,9 +139,16 @@ objects:
                     def splitURL = gitURL.split(/\\/\\//)
                     def protocol = splitURL[0]
                     def gitHost = splitURL[1]
-                    withCredentials([usernamePassword(credentialsId: 'ci-cd-git-secret', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                              
+                    // need to figure out how to get username from the credentials
+                    def username = "APKAIYMS5Y3AMAIY4L2A"                   
+                    // This is not working for some reason
+                    //   withCredentials([sshUserPrivateKey(credentialsId: 'itweb-git-credentials', usernameVariable: 'SSH_USERNAME')]) {
+                    //       sh("echo ${SSH_USERNAME}")
+                    //   }
+                    sshagent(['itweb-git-credentials']) {
                       sh("git tag -a " + imageSHA + " -m 'image built'")
-                      sh("git push " + protocol + "//${GIT_USERNAME}:${GIT_PASSWORD}@" + gitHost + " --tags")
+                      sh("git push " + protocol + "//" + username + "@" + gitHost + " --tags")
                     }
                   }
                 }
