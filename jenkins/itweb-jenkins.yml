@@ -31,10 +31,10 @@ items:
       type: Source
     source:          
       git:
-        uri: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-jenkins
+        uri: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-jenkins
       type: Git
       sourceSecret:
-        name: git-secret    
+        name: git-private-key    
     output:
       to:
         kind: ImageStreamTag
