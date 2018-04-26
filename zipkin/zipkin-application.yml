@@ -34,7 +34,13 @@ items:
           ports:
           - containerPort: 9411
             protocol: TCP
-          resources: {}
+          resources: 
+              requests: 
+                cpu: 300m
+                memory: 1Gi
+              limits:
+                cpu: 900m
+                memory: 2Gi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         dnsPolicy: ClusterFirst
