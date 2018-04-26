@@ -46,7 +46,7 @@ parameters:
 - description: The Git branch/tag reference
   displayName: Git branch/tag reference
   name: GIT_REF
-  value: master
+  value: develop
   required: true
 - description: The name of the Dev Namespace
   displayName: Dev Name Space
