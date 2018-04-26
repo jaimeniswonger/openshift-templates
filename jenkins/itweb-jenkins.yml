@@ -1,53 +1,10 @@
 apiVersion: v1
 kind: List
 items:
-# IMAGE STREAM -- itweb-jenkins-base
+# IMAGE STREAM -- itweb-jenkins
 - apiVersion: v1
   kind: ImageStream
   metadata:
-    labels:
-      app: itweb-jenkins
-    name: itweb-jenkins-base
-  spec:
-    lookupPolicy:
-      local: false
-# BUILD CONFIG -- itweb-jenkins-base 
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
-    name: itweb-jenkins-base
-    labels:
-      app: itweb-jenkins
-  spec:
-    strategy:
-      dockerStrategy:
-        from:
-          kind: DockerImage
-          name: 'openshift/jenkins-2-centos7:v3.9'
-      type: Docker
-    source:
-      dockerfile: |
-        FROM openshift/jenkins-2-centos7:v3.9
-        USER 1001
-        ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-        CMD ["/usr/libexec/s2i/run"]
-      type: Dockerfile    
-    output:
-      to:
-        kind: ImageStreamTag
-        name: 'itweb-jenkins-base:latest'
-    postCommit: {}
-    resources: {}
-    runPolicy: Serial
-    triggers:
-      - generic:
-          secret: itweb-jenkins
-        type: Generic
-# IMAGE STREAM -- itweb-jenkins    
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    annotations:
     labels:
       app: itweb-jenkins
     name: itweb-jenkins
@@ -58,7 +15,7 @@ items:
       - annotations:
           description: The Jenkins image for ITWEB
           tags: itweb-jenkins
-# BUILD CONFIG -- itweb-jenkins
+# BUILD CONFIG -- itweb-jenkins 
 - apiVersion: v1
   kind: BuildConfig
   metadata:
@@ -66,22 +23,26 @@ items:
     labels:
       app: itweb-jenkins
   spec:
-    source:                       
+    strategy:
+      sourceStrategy:
+        from:
+          kind: DockerImage
+          name: 'openshift/jenkins-2-centos7:v3.9'
+      type: Source
+    source:          
       git:
         uri: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-jenkins
       type: Git
       sourceSecret:
         name: git-secret    
-    strategy:                     
-      sourceStrategy:
-        from:
-          kind: ImageStreamTag
-          name: 'itweb-jenkins-base:latest'
-      type: Source
-    output:                       
+    output:
       to:
         kind: ImageStreamTag
-        name: itweb-jenkins:latest
+        name: 'itweb-jenkins:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
     triggers:
-      - imageChange:
-        type: ImageChange        
+      - generic:
+          secret: itweb-jenkins
+        type: Generic
