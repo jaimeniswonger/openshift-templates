@@ -1,0 +1,99 @@
+Installed postgres
+Uploaded aci-conjur image
+Created deployment from image, and set environment
+exposed route on port 8080
+
+then from Pod Terminal:
+
+# create account
+conjurctl account create itweb
+
+RETURNED:
+
+
+Token-Signing Public Key: -----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzS9qW9EX7Y1li+Wm35po
+eJL9IGPm5L2v2SQ8xOg+VCj74H1xMU4PGcbzBy9nz37ycsZZXCsH3RhOUhKvFfs0
+uOy2Fl6N8azfLZpz9NucaNKkC3nI/dvxCEr3xPK4EC/YpHNTkDtvYFb40rIF81yC
+MbFK7h+Rh0AQ7Z4MwfFmMdI1osWepM1C1Pi8Z+702z9QJ9LyNOYIPFEO9O15PYP2
+i/hDXCtQsrcX3z1alJuEf4aXQC9xUEj9ptnaQjpcxJD9BqDd8ScrkuYFNRCqFFY5
+TKFgeDgdUc7yeBJY34IKcmHfdny6MAlNtqcni6iP2eDUK2n01M8Sb7nBkrJuWK8q
+oQIDAQAB
+-----END PUBLIC KEY-----
+API key for admin: 3zn7xjg2f7rq2d3c91c8w8fky1f3vatc1p3mhskm324q04nf163zb34
+
+
+----------------------
+
+$ conjur authn login -u admin
+
+----------------------
+
+$ conjur authn authenticate -H
+
+returns token that we use in Postman
+
+
+from ~/git/conjur-playground
+
+
+$ conjur policy load --replace root conjur.yml
+Loaded policy 'root'
+{
+  "created_roles": {
+  },
+  "version": 1
+}
+
+----------------------
+
+$ conjur policy load userpreference-service userpreference-service.yml
+Loaded policy 'userpreference-service'
+{
+  "created_roles": {
+    "itweb:host:userpreference-service/some-static-host-01": {
+      "id": "itweb:host:userpreference-service/some-static-host-01",
+      "api_key": "1aahg7x3ajgbsv87srg31emhqgh12hyvf38s33v53qwfwzn1msyjs4"
+    }
+  },
+  "version": 1
+}
+
+----------------------
+
+$ conjur policy load userpreference userpreference.yml
+Loaded policy 'userpreference'
+{
+  "created_roles": {
+  },
+  "version": 1
+}
+
+----------------------
+
+$ conjur variable values add userpreference/db-password 0p3nsh1ft
+
+----------------------
+
+$ conjur variable value userpreference/db-password
+
+----------------------
+
+$ CONJUR_AUTHN_LOGIN=host/userpreference-service/some-static-host-01 CONJUR_AUTHN_API_KEY=1aahg7x3ajgbsv87srg31emhqgh12hyvf38s33v53qwfwzn1msyjs4 conjur variable value userpreference/db-password
+0p3nsh1ft
+
+----------------------
+
+
+
+
+HERE IS A TOKEN THAT IS CIDR RESTRICTED.
+[
+    {
+        "expiration": "2019-01-24T19:41:48Z",
+        "cidr": [
+            "10.154.47.0/24"
+        ],
+        "token": "rvtaxs1h3ktqmsardzv2td43e63x7v60z1tvkbma21z8knw3am1kna"
+    }
+]
