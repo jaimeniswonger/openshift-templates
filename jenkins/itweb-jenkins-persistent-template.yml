@@ -53,6 +53,7 @@ objects:
     source:          
       git:
         uri: ${JENKINS_GIT_REPOSITORY}
+        ref: ${JENKINS_GIT_REPOSITORY_BRANCH}
       type: Git
       sourceSecret:
         name: ${JENKINS_GIT_SECRET}
@@ -275,6 +276,10 @@ parameters:
   displayName: Git Repository
   name: JENKINS_GIT_REPOSITORY
   value: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-jenkins
+- description: The git repository branch used to build the image
+  displayName: Git Repository Branch
+  name: JENKINS_GIT_REPOSITORY_BRANCH
+  value: develop
 - description: The secret used to access the Git repository
   displayName: Git Secret
   name: JENKINS_GIT_SECRET
