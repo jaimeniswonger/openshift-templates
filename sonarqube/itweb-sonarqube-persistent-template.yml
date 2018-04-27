@@ -1,0 +1,383 @@
+kind: Template
+apiVersion: v1
+metadata:
+  annotations:
+    description: The SonarQube OpenShift template
+    tags: instant-app,sonarqube
+  name: itweb-sonarqube-persistent
+message: "Login to SonarQube with the default admin user: admin/admin"
+# PARAMETERS
+parameters:
+- description: Password for SonarQube Server PostgreSQL backend
+  displayName: SonarQube's PostgreSQL Password
+  name: SONARQUBE_SERVICE_NAME
+  value: itweb-sonarqube
+- description: The name of the service used for sonarqube
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: POSTGRESQL_PASSWORD
+  required: true
+- description: Volume space available for data, e.g. 512Mi, 2Gi.
+  displayName: Volume Capacity
+  name: VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Maximum amount of memory the container can use.
+  displayName: Memory Limit
+  name: MEMORY_LIMIT
+  value: 2Gi
+- description: The OpenShift Namespace where the SonarQube ImageStream resides.
+  displayName: SonarQube ImageStream Namespace
+  name: NAMESPACE
+  value: itweb-ci-cd
+- description: Maximum amount of CPU the container can use.
+  displayName: CPU Limit
+  name: CPU_LIMIT
+  value: 1500m
+- description: The URL to access Jenkins
+  displayName: Route URL
+  name: SONARQUBE_HOST
+  value: sonarqube.awsos2.americancentury.com
+- description: Name of the ImageStreamTag to be used for the Jenkins image.
+  displayName: Jenkins ImageStreamTag
+  name: SONARQUBE_IMAGE_STREAM_TAG
+  value: itweb-sonarqube:latest
+- description: The OpenShift Namespace where the Jenkins ImageStream resides.
+  displayName: Jenkins ImageStream Namespace
+  name: NAMESPACE
+  value: itweb-ci-cd
+objects:
+# SERVICES
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    ports:
+    - name: sonarqube
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+    selector:
+      app: ${SONARQUBE_SERVICE_NAME}
+      deploymentconfig: ${SONARQUBE_SERVICE_NAME}
+      #app: sonarqube
+      #deploymentconfig: sonarqube
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: postgresql-sonarqube
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    ports:
+    - name: postgresql
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      app: ${SONARQUBE_SERVICE_NAME}
+      deploymentconfig: postgresql-sonarqube
+    sessionAffinity: None
+    type: ClusterIP
+# ROUTE
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      description: Route for SonarQube's http service.
+    name: ${SONARQUBE_SERVICE_NAME}
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    host: ${SONARQUBE_HOST}
+    ##add parameter for host name 
+    #sonarqube.awsos1.americancentury.com
+    to:
+      kind: Service
+      name: ${SONARQUBE_SERVICE_NAME}
+# PERSISTENT VOLUME CLAIM      
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    accessModes:
+    - ReadWriteMany
+    resources:
+      requests:
+        storage: ${VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}-data
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${VOLUME_CAPACITY}
+# IMAGE STREAMS
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+    name: sonarqube
+  spec:
+    tags:
+    - annotations:
+        description: The ITWEB SonarQube Docker image
+        tags: ${SONARQUBE_SERVICE_NAME}
+      from:
+        kind: DockerImage
+        name: owasp/sonarqube:latest
+        ## owasp/sonarqube:latest
+      importPolicy: {}
+      name: latest
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+    name: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    tags:
+      - annotations:
+          description: The Sonarqube image for ITWEB
+          tags: ${SONARQUBE_SERVICE_NAME}
+# BUILD CONFIGS
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${SONARQUBE_IMAGE_STREAM_TAG}
+    source:
+      type: Dockerfile
+      dockerfile: |-
+        FROM owasp/sonarqube:latest
+        ENV SQ_CX_PLUGIN_VERSION=8.60.0 \
+            SQ_CX_SAST_VERSION=8.6.0
+        RUN set -x \
+         && cd $SONARQUBE_HOME/extensions/plugins/ \
+         && wget --no-verbose --no-check-certificate https://download.checkmarx.com/$SQ_CX_SAST_VERSION/Plugins/Sonar-$SQ_CX_PLUGIN_VERSION.zip \
+         && unzip Sonar-$SQ_CX_PLUGIN_VERSION.zip \
+         && rm Sonar-$SQ_CX_PLUGIN_VERSION.zip* \
+         && chmod -R 777 $SONARQUBE_HOME \
+         && chown -R sonarqube:sonarqube $SONARQUBE_HOME
+         
+         ENTRYPOINT ["./bin/run.sh"]
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: sonarqube:latest
+        env:
+        - name: SQ_CX_PLUGIN_VERSION
+          value: 8.60.0
+        - name: SQ_CX_SAST_VERSION
+          value: 8.6.0
+    triggers:
+    - type: ImageChange
+      imageChange: {}
+# DEPLOYMENT CONFIGS
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+      deploymentconfig: ${SONARQUBE_SERVICE_NAME}
+    name: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      app: ${SONARQUBE_SERVICE_NAME}
+      deploymentconfig: ${SONARQUBE_SERVICE_NAME}
+    strategy:
+      resources:
+            limits:
+              cpu: ${CPU_LIMIT}
+              memory: ${MEMORY_LIMIT}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/container.sonarqube.image.entrypoint: '["./bin/run.sh"]'
+        creationTimestamp: null
+        labels:
+          app: ${SONARQUBE_SERVICE_NAME}
+          deploymentconfig: ${SONARQUBE_SERVICE_NAME}
+      spec:
+        containers:
+        - env:
+          - name: SONARQUBE_JDBC_PASSWORD
+            value: ${POSTGRESQL_PASSWORD}
+          - name: SONARQUBE_JDBC_URL
+            value: jdbc:postgresql://postgresql-sonarqube/sonar
+          - name: SONARQUBE_JDBC_USERNAME
+            value: sonar
+          image: ${NAMESPACE}/${SONARQUBE_IMAGE_STREAM_TAG}
+          imagePullPolicy: Always
+          name: sonarqube
+          ports:
+          - containerPort: 9000
+            protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            successThreshold: 1
+            httpGet:
+              port: 9000
+              path: /
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            successThreshold: 1
+            httpGet:
+              port: 9000
+              path: /
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: 1
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /opt/sonarqube/data
+            name: ${SONARQUBE_SERVICE_NAME}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: ${SONARQUBE_SERVICE_NAME}
+          persistentVolumeClaim:
+            claimName: ${SONARQUBE_SERVICE_NAME}
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - itweb-sonarqube
+        from:
+          kind: ImageStreamTag
+          name: ${SONARQUBE_IMAGE_STREAM_TAG}
+          namespace: ${NAMESPACE}
+          #itweb-sonarqube:latest
+      type: ImageChange
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: ${SONARQUBE_SERVICE_NAME}
+      deploymentconfig: postgresql-sonarqube
+    name: postgresql-sonarqube
+  spec:
+    replicas: 1
+    selector:
+      app: ${SONARQUBE_SERVICE_NAME}
+      deploymentconfig: postgresql-sonarqube
+    strategy:
+      recreateParams:
+        timeoutSeconds: 600
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: ${SONARQUBE_SERVICE_NAME}
+          deploymentconfig: postgresql-sonarqube
+      spec:
+        containers:
+        - env:
+          - name: POSTGRESQL_USER
+            value: sonar
+          - name: POSTGRESQL_PASSWORD
+            value: ${POSTGRESQL_PASSWORD}
+          - name: POSTGRESQL_DATABASE
+            value: sonar
+          image: ' '
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 5432
+            timeoutSeconds: 1
+          name: postgresql
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -i
+              - -c
+              - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 256Mi
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /var/lib/pgsql/data
+            name: ${SONARQUBE_SERVICE_NAME}-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: ${SONARQUBE_SERVICE_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${SONARQUBE_SERVICE_NAME}-data
+
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - postgresql
+        from:
+          kind: ImageStreamTag
+          name: postgresql:9.5
+          namespace: openshift
+      type: ImageChange
+    - type: ConfigChange
