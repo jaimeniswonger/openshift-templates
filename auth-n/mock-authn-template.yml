@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: mock-auth-n
+metadata:
+  annotations:
+    description: A Mock Authentication Service used by ITWEB
+    iconClass: icon-sso
+    openshift.io/display-name: Mock Auth-N
+    tags: itweb,nodejs
+  name: mock-auth-n
+objects:
+# IMAGE STREAM    
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: mock-auth-n
+    name: mock-auth-n
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - annotations: null
+      generation: null
+      importPolicy: {}
+      name: latest
+      referencePolicy:
+        type: ""
+  status:
+    dockerImageRepository: ""
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: mock-auth-n
+    name: mock-auth-n
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: mock-auth-n:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        ref: master
+        uri: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-auth-n
+      sourceSecret:
+        name: git-private-key
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: nodejs:4
+          namespace: openshift
+      type: Source
+    triggers:
+    - imageChange: {}
+      type: ImageChange
+    - type: ConfigChange
+  status:
+    lastVersion: 0
+# DEPLOYMENT CONFIG    
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: mock-auth-n
+    name: mock-auth-n
+  spec:
+    replicas: 1
+    selector:
+      app: mock-auth-n
+      deploymentconfig: mock-auth-n
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: mock-auth-n
+          deploymentconfig: mock-auth-n
+      spec:
+        containers:
+        - image: mock-auth-n:latest
+          imagePullPolicy: Always
+          name: mock-auth-n
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8081
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 900m
+              memory: 2Gi
+            requests:
+              cpu: 300m
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - mock-auth-n
+        from:
+          kind: ImageStreamTag
+          name: mock-auth-n:latest
+      type: ImageChange
+    - type: ConfigChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+# SERVICE    
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: mock-auth-n
+    name: mock-auth-n
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: mock-auth-n
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+# ROUTE
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: mock-auth-n
+    name: mock-auth-n
+  spec:
+    host: auth-n.awsos2.americancentury.com
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: mock-auth-n
+      weight: 100
+    wildcardPolicy: None
