@@ -59,7 +59,7 @@ objects:
     output:
       to:
         kind: ImageStreamTag
-        name: ${JENKINS_IMAGE_STREAM_TAG}
+        name: ${JENKINS_SERVICE_NAME}:latest
     postCommit: {}
     resources: {}
     runPolicy: Serial
@@ -141,7 +141,7 @@ objects:
               port: 8080
             initialDelaySeconds: 420
             timeoutSeconds: 3
-          name: itweb-jenkins
+          name: jenkins
           readinessProbe:
             httpGet:
               path: /login
@@ -170,10 +170,10 @@ objects:
     - imageChangeParams:
         automatic: true
         containerNames:
-        - itweb-jenkins
+        - jenkins
         from:
           kind: ImageStreamTag
-          name: ${JENKINS_IMAGE_STREAM_TAG}
+          name: ${JENKINS_SERVICE_NAME}:latest
           namespace: ${NAMESPACE}
         lastTriggeredImage: ""
       type: ImageChange
@@ -183,7 +183,7 @@ objects:
   kind: ServiceAccount
   metadata:
     annotations:
-      serviceaccounts.openshift.io/oauth-redirectreference.itweb-jenkins: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"${JENKINS_SERVICE_NAME}"}}'
+      serviceaccounts.openshift.io/oauth-redirectreference.jenkins: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"${JENKINS_SERVICE_NAME}"}}'
     name: ${JENKINS_SERVICE_NAME}
     labels:
       app: ${JENKINS_SERVICE_NAME}
@@ -244,11 +244,11 @@ parameters:
 - description: The name of the OpenShift Service exposed for the Jenkins container.
   displayName: Jenkins Service Name
   name: JENKINS_SERVICE_NAME
-  value: itweb-jenkins
+  value: jenkins
 - description: The name of the service used for master/slave communication.
   displayName: Jenkins JNLP Service Name
   name: JNLP_SERVICE_NAME
-  value: itweb-jenkins-jnlp
+  value: jenkins-jnlp
 - description: Whether to enable OAuth OpenShift integration. If false, the static
     account 'admin' will be initialized with the password 'password'.
   displayName: Enable OAuth in Jenkins
@@ -271,10 +271,6 @@ parameters:
   displayName: Jenkins ImageStream Namespace
   name: NAMESPACE
   value: itweb-ci-cd
-- description: Name of the ImageStreamTag to be used for the Jenkins image.
-  displayName: Jenkins ImageStreamTag
-  name: JENKINS_IMAGE_STREAM_TAG
-  value: itweb-jenkins:latest
 - description: The url to the git repository used to build the image
   displayName: Git Repository
   name: JENKINS_GIT_REPOSITORY
