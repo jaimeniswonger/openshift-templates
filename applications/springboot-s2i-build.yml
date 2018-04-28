@@ -1,0 +1,48 @@
+####                                              
+#### CREATES THE springboot-s2i IMAGE STREAM AND BUILD CONFIG
+####    - This is the builder image for all spring boot builds
+####    - The Git repo is: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/springboot-s2i
+####        * Currently, no automated builds are triggered from changes from this repository
+####
+apiVersion: v1
+kind: List
+items:
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: springboot-s2i
+    labels:
+      template: springboot-s2i
+  spec:
+    lookupPolicy:
+      local: false
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: springboot-s2i
+    labels:
+      template: springboot-s2i
+  spec:
+    strategy:
+      dockerStrategy:
+      type: Docker
+    source:
+      git:
+        uri: "ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/springboot-s2i"
+        ref: develop
+      sourceSecret:
+        name: git-private-key
+      type: Dockerfile    
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'springboot-s2i:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers:
+      - generic:
+          secret: springboot-s2i
+        type: Generic
