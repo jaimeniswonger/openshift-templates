@@ -16,16 +16,47 @@ objects:
       app: ${APP_NAME}    
   spec:
     runPolicy: Serial
-    source:
-      type: Git
-      git:
-        uri: ${GIT_URL}
-        ref: ${GIT_REF}
-      sourceSecret:
-        name: ${GIT_SECRET}
     strategy:
       jenkinsPipelineStrategy:
-        jenkinsfile: "node('maven') {\r\n  stage('Fetch Source') {\r\n  \tgit credentialsId: 'ci-cd-git-secret', branch: '${GIT_REF}', url: '${GIT_URL}'\r\n  }\r\n\r\n  stage('Maven Test & Deploy') {\r\n configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {\r\n\t  sh \"mvn -s $MAVEN_SETTINGS -DskipTests clean deploy\"\r\n    }\r\n  }\r\n  \r\n stage('Build Image') {\r\n  \tdef pom = readMavenPom file: 'pom.xml'\r\n  \tdef groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()\r\n  \tdef artifactId = pom.getArtifactId()\r\n  \tdef version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()\r\n    openshiftBuild(namespace: '${NAMESPACE}', buildConfig: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:\"${groupId}\"], [name:'MVN_ARTIFACTID', value:\"${artifactId}\"], [name:'MVN_VERSION', value:\"${version}\"]])\r\n    openshiftBuild(namespace: '${NAMESPACE}', buildConfig: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:\"${groupId}\"], [name:'MVN_ARTIFACTID', value:\"${artifactId}\"], [name:'MVN_VERSION', value:\"${version}\"]])\r\n  }\r\n  \r\n  stage('Deploy') {\r\n    openshiftDeploy(namespace: '${NAMESPACE}', deploymentConfig: '${APP_NAME}')  \r\n  }  \r\n}"        
+        jenkinsfile: >
+          pipeline {
+            agent { node { label 'maven' } }
+            stages {
+              stage('Fetch Source') {
+                steps {
+                  git credentialsId: '${GIT_CREDENTIALS}', branch: '${GIT_REF}', url: '${GIT_URL}'
+                }
+              }
+            
+              stage('Maven Test & Deploy') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS -DskipTests clean deploy")
+                  }
+                }
+              }
+              
+              stage('Build Image') {
+                steps {
+                  script {
+                    def pom = readMavenPom file: 'pom.xml'
+                    def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
+                    def artifactId = pom.getArtifactId()
+                    def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
+                    
+                    openshiftBuild(namespace: '${NAMESPACE}', bldCfg: '${APP_NAME}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                    openshiftBuild(namespace: '${NAMESPACE}', bldCfg: '${APP_NAME}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                  }
+                }
+              }
+              
+              stage('Deploy') {
+                steps {
+                  openshiftDeploy(namespace: '${NAMESPACE}', depCfg: '${APP_NAME}')
+                }
+              }
+            }
+          }
       type: JenkinsPipeline
     triggers:
       - generic:
@@ -41,23 +72,23 @@ parameters:
 - description: The URL of the Git repository
   displayName: Git URL
   name: GIT_URL
-  value: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
+  value: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
   required: true
 - description: The Git branch/tag reference
   displayName: Git branch/tag reference
   name: GIT_REF
   value: develop
   required: true
+- description: The secret containing Git credentials
+  displayName: Git Credentials Secret
+  name: GIT_CREDENTIALS
+  value: itweb-git-credentials
+  required: true
 - description: The name of the Dev Namespace
   displayName: Dev Name Space
   name: NAMESPACE
-  value: infra-poc
+  value: itweb-infra
   required: true  
-- description: The secret containing Git credentials
-  displayName: Git Credentials Secret
-  name: GIT_SECRET
-  value: git-secret
-  required: true
 - description: The path to the Jenkinsfile
   displayName: Jenkinsfile Path
   name: JENKINS_FILE_PATH

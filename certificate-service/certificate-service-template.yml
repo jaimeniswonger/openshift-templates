@@ -47,22 +47,16 @@ objects:
     labels:
       app: ${APP_NAME}
   spec:
-    source:
-      type: Git
-      git:
-        uri: ${GIT_URL}
-        ref: ${GIT_REF}
-      sourceSecret:
-        name: ${GIT_SECRET}
     strategy:
       type: Source
       sourceStrategy:
         from:
           kind: ImageStreamTag
           name: springboot-s2i:latest
+          namespace: itweb-infra
         env:
           - name: NEXUS_HOST
-            value: http://nexus3.ci-cd.svc:8081
+            value: ${NEXUS_HOST}
     output:
       to:
         kind: ImageStreamTag
@@ -235,17 +229,12 @@ parameters:
 - description: The URL of the Git repository
   displayName: Git URL
   name: GIT_URL
-  value: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
+  value: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
   required: true
 - description: The Git branch/tag reference
   displayName: Git branch/tag reference
   name: GIT_REF
-  value: master
-  required: true
-- description: The secret containing Git credentials
-  displayName: Git Credentials Secret
-  name: GIT_SECRET
-  value: git-secret
+  value: develop
   required: true
 - description: Generic build Trigger Secret
   from: '[a-zA-Z0-9]{8}'
@@ -279,4 +268,9 @@ parameters:
   displayName: Maximum Memory
   name: MAX_MEM
   value: 2Gi
+  required: true
+- description: Nexus Host
+  displayName: Nexus Host
+  name: NEXUS_HOST
+  value: http://nexus3.itweb-ci-cd.svc:8081
   required: true
