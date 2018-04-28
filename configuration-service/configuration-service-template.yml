@@ -3,6 +3,7 @@ kind: Template
 metadata:
   name: configuration-service
   annotations:
+    displayName: ITWEB - Spring Configuration Server
     description: Spring Configuration Server
     iconClass: icon-spring
     tags: builder, spring-boot, spring-cloud, config
@@ -59,10 +60,10 @@ objects:
         from:
           kind: ImageStreamTag
           name: springboot-s2i:latest
-          namespace: dev-poc
+          namespace: itweb-infra
         env:
           - name: NEXUS_HOST
-            value: http://nexus3.ci-cd.svc:8081
+            value: ${NEXUS_HOST}
     output:
       to:
         kind: ImageStreamTag
@@ -93,7 +94,7 @@ objects:
           name: springboot-s2i:latest
         env:
           - name: NEXUS_HOST
-            value: http://nexus3.ci-cd.svc:8081          
+            value: ${NEXUS_HOST}          
     output:
       to:
         kind: ImageStreamTag
@@ -232,17 +233,17 @@ parameters:
 - description: The URL of the Git repository
   displayName: Git URL
   name: GIT_URL
-  value: https://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-config-service
+  value: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-config-service
   required: true
 - description: The Git branch/tag reference
   displayName: Git branch/tag reference
   name: GIT_REF
-  value: master
+  value: develop
   required: true
 - description: The secret containing Git credentials
   displayName: Git Credentials Secret
   name: GIT_SECRET
-  value: git-secret
+  value: git-private-key
   required: true
 - description: Generic build Trigger Secret
   from: '[a-zA-Z0-9]{8}'
@@ -251,7 +252,7 @@ parameters:
 - description: The hostname for the route
   displayName: Route Host
   name: ROUTE_HOST
-  value: config.awsos1.americancentury.com
+  value: config.awsos2.americancentury.com
   required: true
 - description: Minimum CPU
   displayName: Minimum CPU
@@ -272,4 +273,9 @@ parameters:
   displayName: Maximum Memory
   name: MAX_MEM
   value: 2Gi
+  required: true
+- description: The URL to reach the Nexus Host
+  displayName: Nexus Host URL
+  name: NEXUS_HOST
+  value: http://nexus3.itweb-ci-cd.svc:8081
   required: true
