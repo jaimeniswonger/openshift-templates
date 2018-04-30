@@ -4,7 +4,7 @@ metadata:
   name: itweb-zipkin
   labels:
   annotations:
-    description: A Template for the zipkin service
+    description: A Template for ITWEB's Zipkin service
     iconClass: icon-spring
     tags: spring-boot, spring-cloud, itweb, development
     openshift.io/display-name: ITWEB - Zipkin
@@ -15,14 +15,14 @@ objects:
   metadata:
     name: itweb-zipkin
     labels:
-      app: itweb-zipkin
+      app: ${APP_NAME}
 # BUILD CONFIG
 - apiVersion: v1
   kind: BuildConfig
   metadata:
-    name: itweb-zipkin
+    name: ${APP_NAME}
     labels:
-      app: itweb-zipkin    
+      app: ${APP_NAME}    
   spec:
     strategy:
       type: Docker
@@ -47,13 +47,13 @@ objects:
   kind: DeploymentConfig
   metadata:
     labels:
-      app: itweb-zipkin
-    name: itweb-zipkin
+      app: ${APP_NAME}
+    name: ${APP_NAME}
   spec:
     replicas: 1
     selector:
-      app: itweb-zipkin
-      deploymentconfig: itweb-zipkin
+      app: ${APP_NAME}
+      deploymentconfig: ${APP_NAME}
     strategy:
       activeDeadlineSeconds: 21600
       resources: {}
@@ -67,12 +67,12 @@ objects:
     template:
       metadata:
         labels:
-          app: itweb-zipkin
-          deploymentconfig: itweb-zipkin
+          app: ${APP_NAME}
+          deploymentconfig: ${APP_NAME}
       spec:
         containers:
         - imagePullPolicy: Always
-          name: itweb-zipkin
+          name: ${APP_NAME}
           ports:
           - containerPort: 9411
             protocol: TCP
@@ -96,7 +96,7 @@ objects:
     - imageChangeParams:
         automatic: true
         containerNames:
-        - itweb-zipkin
+        - ${APP_NAME}
         from:
           kind: ImageStreamTag
           name: itweb-zipkin:latest
@@ -113,8 +113,8 @@ objects:
   kind: Service
   metadata:
     labels:
-      app: itweb-zipkin
-    name: itweb-zipkin
+      app: ${APP_NAME}
+    name: ${APP_NAME}
   spec:
     ports:
     - name: 9411-tcp
@@ -122,7 +122,7 @@ objects:
       protocol: TCP
       targetPort: 9411
     selector:
-      deploymentconfig: itweb-zipkin
+      deploymentconfig: ${APP_NAME}
     sessionAffinity: None
     type: ClusterIP
   status:
@@ -132,15 +132,36 @@ objects:
   kind: Route
   metadata:
     labels:
-      app: itweb-zipkin
-    name: itweb-zipkin
+      app: ${APP_NAME}
+    name: ${APP_NAME}
   spec:
-    host: zipkin.awsos2.americancentury.com
+    host: ${ROUTE_HOST}
     port:
       targetPort: 9411-tcp
     to:
       kind: Service
-      name: itweb-zipkin
+      name: ${APP_NAME}
       weight: 100
     wildcardPolicy: None
   status: {}
+parameters:
+- description: The name of the new application
+  displayName: Application Name
+  name: APP_NAME
+  value: zipkin
+  required: true
+- description: The hostname for the route
+  displayName: Route Host
+  name: ROUTE_HOST
+  value: zipkin.awsos2.americancentury.com
+  required: true
+- description: Maximum CPU
+  displayName: Maximum CPU
+  name: MAX_CPU
+  value: 500m
+  required: true
+- description: Maximum Memory
+  displayName: Maximum Memory
+  name: MAX_MEM
+  value: 1Gi
+  required: true
