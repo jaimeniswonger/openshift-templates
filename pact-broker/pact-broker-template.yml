@@ -1,7 +1,6 @@
 apiVersion: v1
 kind: Template
 metadata:
-  creationTimestamp: null
   name: pact-broker
 objects:
 # IMAGE STREAM
@@ -45,8 +44,8 @@ objects:
     source:
       contextDir: /pact_broker
       git:
-        ref: 2.16.1-3
         uri: https://github.com/DiUS/pact_broker-docker.git
+        ref: 2.16.1-3
       type: Git
     strategy:
       sourceStrategy:
@@ -165,6 +164,7 @@ objects:
     type: ClusterIP
   status:
     loadBalancer: {}
+# ROUTE
 - apiVersion: v1
   kind: Route
   metadata:
@@ -173,7 +173,7 @@ objects:
       app: pact-broker
     name: pact-broker
   spec:
-    host: pact-broker.awsos1.americancentury.com
+    host: ${ROUTE_HOST}
     port:
       targetPort: 8080-tcp
     to:
@@ -187,27 +187,22 @@ objects:
       - lastTransitionTime: 2018-03-13T21:39:49Z
         status: "True"
         type: Admitted
-      host: pact-broker.awsos1.americancentury.com
+      host: pact-broker.awsos2.americancentury.com
       routerName: router
       wildcardPolicy: None
-# SERVICE CONFIG - POSTGRES      
+# PERSISTENT VOLUME CLAIM      
 - apiVersion: v1
-  kind: Service
+  kind: PersistentVolumeClaim
   metadata:
-    name: postgresql-pact-broker
+    name: pact-broker-data
     labels:
       app: pact-broker
   spec:
-    ports:
-    - name: postgresql
-      port: 5432
-      protocol: TCP
-      targetPort: 5432
-    selector:
-      app: pact-broker
-      deploymentconfig: postgresql-pact-broker
-    sessionAffinity: None
-    type: ClusterIP
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${VOLUME_CAPACITY}
 # DEPLOYMENT CONFIG - POSTGRES  
 - apiVersion: v1
   kind: DeploymentConfig
@@ -278,16 +273,16 @@ objects:
           terminationMessagePath: /dev/termination-log
           volumeMounts:
           - mountPath: /var/lib/pgsql/data
-            name: postgresql-pact-broker-data
+            name: pact-broker-data
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
-        - name: postgresql-pact-broker-data
+        - name: pact-broker-data
           emptyDir: {}
 #          persistentVolumeClaim:
-#            claimName: postgresql-pact-broker-data
+#            claimName: pact-broker-data
     test: false
     triggers:
     - imageChangeParams:
@@ -300,6 +295,24 @@ objects:
           namespace: openshift
       type: ImageChange
     - type: ConfigChange
+# SERVICE CONFIG - POSTGRES      
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: postgresql-pact-broker
+    labels:
+      app: pact-broker
+  spec:
+    ports:
+    - name: postgresql
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      app: pact-broker
+      deploymentconfig: postgresql-pact-broker
+    sessionAffinity: None
+    type: ClusterIP    
 # SECRETS
 - apiVersion: v1
   metadata:
@@ -311,29 +324,39 @@ objects:
   kind: Secret
 # PARAMETERS  
 parameters:
-  - description: Password for the PostgreSQL connection user.
-    displayName: PostgreSQL Connection Password
-    from: '[a-zA-Z0-9]{16}'
-    generate: expression
-    name: POSTGRESQL_PASSWORD
-    required: true
-  - description: Minimum CPU
-    displayName: Minimum CPU
-    name: MIN_CPU
-    value: 300m
-    required: true
-  - description: Minimum Memory
-    displayName: Minimum Memory
-    name: MIN_MEM
-    value: 1Gi
-    required: true
-  - description: Maximum CPU
-    displayName: Maximum CPU
-    name: MAX_CPU
-    value: 900m
-    required: true  
-  - description: Maximum Memory
-    displayName: Maximum Memory
-    name: MAX_MEM
-    value: 2Gi
-    required: true
+- description: Volume space available for data, e.g. 512Mi, 2Gi.
+  displayName: Volume Capacity
+  name: VOLUME_CAPACITY
+  required: true
+  value: 1Gi
+- description: Password for the PostgreSQL connection user.
+  displayName: PostgreSQL Connection Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: POSTGRESQL_PASSWORD
+  required: true
+- description: Minimum CPU
+  displayName: Minimum CPU
+  name: MIN_CPU
+  value: 300m
+  required: true
+- description: Minimum Memory
+  displayName: Minimum Memory
+  name: MIN_MEM
+  value: 1Gi
+  required: true
+- description: Maximum CPU
+  displayName: Maximum CPU
+  name: MAX_CPU
+  value: 900m
+  required: true  
+- description: Maximum Memory
+  displayName: Maximum Memory
+  name: MAX_MEM
+  value: 2Gi
+  required: true
+- description: The hostname for the route
+  displayName: Route Host
+  name: ROUTE_HOST
+  value: pact-broker.awsos2.americancentury.com
+  required: true
