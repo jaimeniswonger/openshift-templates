@@ -279,20 +279,21 @@ objects:
         terminationGracePeriodSeconds: 30
         volumes:
         - name: ${SONARQUBE_SERVICE_NAME}
-          persistentVolumeClaim:
-            claimName: ${SONARQUBE_SERVICE_NAME}
+          emptyDir: {}
+        #  persistentVolumeClaim:
+        #    claimName: ${SONARQUBE_SERVICE_NAME}
     triggers:
-    - type: ConfigChange
     - imageChangeParams:
         automatic: true
         containerNames:
-        - itweb-sonarqube
+        - sonarqube
         from:
           kind: ImageStreamTag
           name: ${SONARQUBE_IMAGE_STREAM_TAG}
           namespace: ${NAMESPACE}
-          #itweb-sonarqube:latest
+        lastTriggeredImage: ""
       type: ImageChange
+    - type: ConfigChange
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
