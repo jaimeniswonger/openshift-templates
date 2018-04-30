@@ -47,22 +47,16 @@ objects:
     labels:
       app: ${APP_NAME}
   spec:
-    source:
-      type: Git
-      git:
-        uri: ${GIT_URL}
-        ref: ${GIT_REF}
-      sourceSecret:
-        name: ${GIT_SECRET}
     strategy:
       type: Source
       sourceStrategy:
         from:
           kind: ImageStreamTag
           name: springboot-s2i:latest
+          namespace: itweb-infra
         env:
           - name: NEXUS_HOST
-            value: http://nexus3.ci-cd.svc:8081
+            value: ${NEXUS_HOST}
     output:
       to:
         kind: ImageStreamTag
@@ -104,6 +98,7 @@ objects:
         from:
           kind: ImageStreamTag
           name: 'itweb-springboot-runtime:latest'
+          namespace: itweb-infra
 # DEPLOYMENT CONFIG
 - apiVersion: v1
   kind: DeploymentConfig
@@ -287,3 +282,8 @@ parameters:
   name: MAX_MEM
   value: 2Gi
   required: true
+- description: Nexus Host
+  displayName: Nexus Host
+  name: NEXUS_HOST
+  value: http://nexus3.itweb-ci-cd.svc:8081
+  required: true  

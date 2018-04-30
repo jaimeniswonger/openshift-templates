@@ -149,7 +149,7 @@ parameters:
 - description: The name of the Dev Namespace
   displayName: Dev Name Space
   name: DEV_NAMESPACE
-  value: dev-poc
+  value: itweb-develop
   required: true  
 - description: The secret containing Git credentials
   displayName: Git Credentials Secret

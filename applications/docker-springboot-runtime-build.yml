@@ -12,6 +12,8 @@ items:
   kind: ImageStream
   metadata:
     name: itweb-springboot-runtime
+    labels:
+      template: itweb-springboot-runtime
   spec:
     lookupPolicy:
       local: false
@@ -20,6 +22,8 @@ items:
   kind: BuildConfig
   metadata:
     name: itweb-springboot-runtime
+    labels:
+      template: itweb-springboot-runtime
   spec:
     strategy:
       dockerStrategy:
@@ -29,9 +33,9 @@ items:
       type: Docker
     source:
       git:
-        uri: "https://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-docker-springboot-runtime"
+        uri: "ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-docker-springboot-runtime"
       sourceSecret:
-        name: git-secret
+        name: git-private-key
       type: Dockerfile    
     output:
       to:
@@ -41,6 +45,8 @@ items:
     resources: {}
     runPolicy: Serial
     triggers:
+      - imageChange: {}
+      - type: ConfigChange
       - generic:
           secret: itweb-springboot-runtime
         type: Generic
