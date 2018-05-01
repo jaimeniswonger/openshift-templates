@@ -50,8 +50,8 @@ objects:
     runPolicy: Serial
     source:
       git:
-        ref: master
         uri: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-auth-n
+        ref: develop
       sourceSecret:
         name: git-private-key
       type: Git
