@@ -236,27 +236,10 @@ parameters:
   displayName: Application Name
   name: APP_NAME
   required: true
-- description: The URL of the Git repository
-  displayName: Git URL
-  name: GIT_URL
-  required: true
-- description: The Git branch/tag reference
-  displayName: Git branch/tag reference
-  name: GIT_REF
-  required: true
-- description: The secret containing Git credentials
-  displayName: Git Credentials Secret
-  name: GIT_SECRET
-  value: git-secret
-  required: true
 - description: Generic build Trigger Secret
   from: '[a-zA-Z0-9]{8}'
   generate: expression
   name: GENERIC_TRIGGER_SECRET
-- description: The hostname for the route
-  displayName: Route Host
-  name: ROUTE_HOST
-  required: false
 - description: Java options
   displayName: Java options
   name: JAVA_OPTS
