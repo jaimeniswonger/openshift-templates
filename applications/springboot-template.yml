@@ -209,9 +209,7 @@ objects:
                     http://$HOSTNAME:8081/health | sed -e
                     's/^.*"status":"\([^"]*\)".*$/\1/')
   
-                    if [ "$STATUS" == "UP"
-                    ]                                                                                                                                                           
-  
+                    if [ "$STATUS" == "UP" ]                                                                                                                                                           
                     then                                                                                                                                                                               
                             exit 0;                                                                                                                                                                    
                     else                                                                                                                                                                               
