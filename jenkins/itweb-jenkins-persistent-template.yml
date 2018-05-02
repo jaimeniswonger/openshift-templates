@@ -133,6 +133,10 @@ objects:
             value: ${JENKINS_SERVICE_NAME}
           - name: JNLP_SERVICE_NAME
             value: ${JNLP_SERVICE_NAME}
+          - name: OVERRIDE_PV_PLUGINS_WITH_IMAGE_PLUGINS
+            value: 'true'
+          - name: OVERRIDE_PV_CONFIG_WITH_IMAGE_CONFIG
+            value: 'true'            
           image: ${NAMESPACE}/${JENKINS_SERVICE_NAME}
           imagePullPolicy: IfNotPresent
           livenessProbe:
