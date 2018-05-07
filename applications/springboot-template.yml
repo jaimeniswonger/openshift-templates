@@ -208,12 +208,12 @@ objects:
                     STATUS=$(curl --insecure --silent
                     http://$HOSTNAME:8081/health | sed -e
                     's/^.*"status":"\([^"]*\)".*$/\1/')
-  
-                    if [ "$STATUS" == "UP" ]                                                                                                                                                           
-                    then                                                                                                                                                                               
-                            exit 0;                                                                                                                                                                    
-                    else                                                                                                                                                                               
-                            exit 1;                                                                                                                                                                    
+
+                    if [ "$STATUS" == "UP" ]
+                    then
+                            exit 0;
+                    else
+                            exit 1;
                     fi
               initialDelaySeconds: 45
               timeoutSeconds: 2
