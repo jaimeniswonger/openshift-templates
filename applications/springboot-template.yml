@@ -206,8 +206,7 @@ objects:
                   - '-c'
                   - >-
                     STATUS=$(curl --insecure --silent
-                    http://$HOSTNAME:8081/health | sed -e
-                    's/^.*"status":"\([^"]*\)".*$/\1/')
+                    http://$HOSTNAME:8081/health | jq -r '.["status"]'
                     
                     if [ "$STATUS" == "UP" ]
 

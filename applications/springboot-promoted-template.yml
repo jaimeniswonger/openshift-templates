@@ -97,8 +97,41 @@ objects:
               limits:
                 cpu: ${MAX_CPU}
                 memory: ${MAX_MEM}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: 8081
+                scheme: HTTP
+              initialDelaySeconds: 5
+              timeoutSeconds: 1
+              periodSeconds: 10
+              successThreshold: 1
+              failureThreshold: 3
+            livenessProbe:
+              exec:
+                command:
+                  - /bin/sh
+                  - '-c'
+                  - >-
+                    STATUS=$(curl --insecure --silent
+                    http://$HOSTNAME:8081/health | jq -r '.["status"]'
+                    
+                    if [ "$STATUS" == "UP" ]
+
+                    then
+                            exit 0;
+                    else
+                            exit 1;
+                    fi                    
+              initialDelaySeconds: 45
+              timeoutSeconds: 2
+              periodSeconds: 10
+              successThreshold: 1
+              failureThreshold: 3
+            terminationMessagePath: /dev/termination-log
+            imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
