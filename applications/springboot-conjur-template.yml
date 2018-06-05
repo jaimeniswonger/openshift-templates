@@ -1,0 +1,358 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: itweb-spring-boot-conjur
+  labels:
+    env: non-prod
+  annotations:
+    description: A Template for building/deploying Spring Boot applications that utilize conjur
+    iconClass: icon-spring
+    tags: spring-boot, spring-cloud, itweb
+    openshift.io/display-name: ITWEB - Spring Boot with Conjur
+objects:
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      app: ${APP_NAME}
+    creationTimestamp: null
+  spec: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: ${APP_NAME}-builder
+    labels:
+      app: ${APP_NAME}
+    creationTimestamp: null
+  spec: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: openjdk
+  spec:
+    tags:
+    - from:
+        kind: DockerImage
+        name: openjdk:8-jre-alpine
+      name: 8-jre-alpine
+      referencePolicy:
+        type: Source
+# BUILD CONFIG - builder
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: ${APP_NAME}-builder
+    labels:
+      app: ${APP_NAME}
+  spec:
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: springboot-s2i:latest
+          namespace: itweb-infra
+        env:
+          - name: NEXUS_HOST
+            value: ${NEXUS_HOST}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APP_NAME}-builder:latest
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange 
+      imageChange: {}
+# BUILD CONFIG - runtime      
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      app: ${APP_NAME}
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APP_NAME}:latest
+    source:
+      type: Dockerfile
+      dockerfile: |
+        FROM itweb-springboot-runtime
+        COPY application.jar /
+        RUN mkdir /certs
+        RUN chmod a+rw /certs
+        CMD ["sh", "/usr/local/bin/startup.sh"]
+      images:
+      - from:
+          kind: ImageStreamTag
+          name: ${APP_NAME}-builder:latest
+        paths:
+        - destinationDir: .
+          sourcePath: /opt/app-root/src/application.jar
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'itweb-springboot-runtime:latest'
+          namespace: itweb-infra
+# DEPLOYMENT CONFIG
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      app: ${APP_NAME}
+  spec:
+    strategy:
+      type: Rolling
+      rollingParams:
+        updatePeriodSeconds: 1
+        intervalSeconds: 1
+        timeoutSeconds: 600
+        maxUnavailable: 25%
+        maxSurge: 25%
+      resources: {}
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          containerNames:
+            - ${APP_NAME}
+          from:
+            kind: ImageStreamTag
+            name: '${APP_NAME}:latest'
+    replicas: 1
+    selector:
+      app: ${APP_NAME}
+      deploymentconfig: ${APP_NAME}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: ${APP_NAME}
+          deploymentconfig: ${APP_NAME}
+      spec:
+        # SHARED VOLUME FOR CONJUR
+        volumes:
+          - name: access-token
+            emptyDir:
+              medium: Memory        
+        containers:
+          # CONJUR AUTHENTICATOR SIDECAR 
+        - image: cyberark/conjur-kubernetes-authenticator
+          imagePullPolicy: Always
+          name: authenticator
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: CONJUR_APPLIANCE_URL
+              value: https://conjur-follower.${CONJUR_NAMESPACE}.svc.cluster.local/api
+            - name: CONJUR_AUTHN_URL
+              value: https://conjur-follower.${CONJUR_NAMESPACE}.svc.cluster.local/api/authn-k8s/itweb-auth
+            - name: CONJUR_ACCOUNT
+              value: ${CONJUR_ACCOUNT}
+            - name: CONJUR_AUTHN_LOGIN
+              value: itweb-develop/*/*
+            - name: CONJUR_SSL_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: ${CONJUR_CONFIG_MAP}
+                  key: ssl-certificate
+          volumeMounts:
+            - mountPath: /run/conjur
+              name: access-token
+          # APPLICATION CONTAINER                  
+        - image: ${APP_NAME}
+          name: ${APP_NAME}
+          volumeMounts:
+            - mountPath: /run/conjur
+              name: access-token
+              readOnly: true            
+          env:
+            - name: CONJUR_APPLIANCE_URL
+              value: https://conjur-follower.${CONJUR_NAMESPACE}.svc.cluster.local/api
+            - name: CONJUR_ACCOUNT
+              value: ${CONJUR_ACCOUNT}
+            - name: CONJUR_AUTHN_TOKEN_FILE
+              value: /run/conjur/access-token
+            - name: CONJUR_SSL_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: ${CONJUR_CONFIG_MAP}
+                  key: ssl-certificate
+            - name: spring_cloud_config_uri
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_uri
+                  name: bootstrap-config
+            - name: spring_cloud_config_failFast
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_failFast
+                  name: bootstrap-config
+            - name: spring_cloud_config_retry_initialInterval
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_retry_initialInterval
+                  name: bootstrap-config
+            - name: spring_cloud_config_retry_maxInterval
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_retry_maxInterval
+                  name: bootstrap-config
+            - name: spring_cloud_config_retry_maxAttempts
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_retry_maxAttempts
+                  name: bootstrap-config
+            - name: spring_cloud_config_retry_multiplier
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_retry_multiplier
+                  name: bootstrap-config
+            - name: CERTIFICATE_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: CERTIFICATE_SERVICE_HOST
+                  name: bootstrap-config
+            - name: CERTIFICATE_COMMON_NAME
+              value: ${APP_NAME}-itweb.americancentury.com                    
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8081
+              protocol: TCP
+          resources: 
+            requests: 
+              cpu: ${MIN_CPU}
+              memory: ${MIN_MEM}
+            limits:
+              cpu: ${MAX_CPU}
+              memory: ${MAX_MEM}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - >-
+                  STATUS=$(curl --insecure --silent http://$HOSTNAME:8081/health
+                  | jq -r '.["status"]')
+
+                  if [ "$STATUS" == "UP" ]
+
+                  then
+                          exit 0;
+                  else
+                          exit 1;
+                  fi                    
+            initialDelaySeconds: 45
+            timeoutSeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirst
+        securityContext: {}
+# SERVICE CONFIG
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      app: ${APP_NAME}
+  spec:
+    ports:
+      - name: 8080-tcp
+        protocol: TCP
+        port: 8080
+        targetPort: 8080
+      - name: 8081-tcp
+        protocol: TCP
+        port: 8081
+        targetPort: 8081
+    selector:
+      app: ${APP_NAME}
+      deploymentconfig: ${APP_NAME}
+    type: ClusterIP
+    sessionAffinity: None
+  status:
+    loadBalancer: {}
+# PARAMETERS    
+parameters:
+- description: The name of the new application
+  displayName: Application Name
+  name: APP_NAME
+  required: true
+- description: Generic build Trigger Secret
+  from: '[a-zA-Z0-9]{8}'
+  generate: expression
+  name: GENERIC_TRIGGER_SECRET
+- description: Java options
+  displayName: Java options
+  name: JAVA_OPTS
+  value:
+  required: false    
+- description: Minimum CPU
+  displayName: Minimum CPU
+  name: MIN_CPU
+  value: 300m
+  required: true
+- description: Minimum Memory
+  displayName: Minimum Memory
+  name: MIN_MEM
+  value: 1Gi
+  required: true
+- description: Maximum CPU
+  displayName: Maximum CPU
+  name: MAX_CPU
+  value: 900m
+  required: true
+- description: Maximum Memory
+  displayName: Maximum Memory
+  name: MAX_MEM
+  value: 2Gi
+  required: true
+- description: Nexus Host
+  displayName: Nexus Host
+  name: NEXUS_HOST
+  value: http://nexus3.itweb-ci-cd.svc:8081
+  required: true  
+- description: The namespace where Conjur is deployed
+  displayName: Conjur Namespace
+  name: CONJUR_NAMESPACE
+  value: conjur-ee
+- description: The Conjur account
+  displayName: Conjur Account
+  name: CONJUR_ACCOUNT
+  value: itweb
+- description: The Conjur config map
+  displayName: Conjur Config Map
+  name: CONJUR_CONFIG_MAP
+  value: conjur-config
