@@ -248,11 +248,11 @@ objects:
               path: /health
               port: 8081
               scheme: HTTP
-            initialDelaySeconds: 5
-            timeoutSeconds: 1
-            periodSeconds: 10
+            initialDelaySeconds: 45
+            timeoutSeconds: 2
+            periodSeconds: 15
             successThreshold: 1
-            failureThreshold: 3
+            failureThreshold: 5
           livenessProbe:
             exec:
               command:
@@ -269,11 +269,11 @@ objects:
                   else
                           exit 1;
                   fi                    
-            initialDelaySeconds: 45
+            initialDelaySeconds: 240
             timeoutSeconds: 2
-            periodSeconds: 10
+            periodSeconds: 30
             successThreshold: 1
-            failureThreshold: 3
+            failureThreshold: 2
           terminationMessagePath: /dev/termination-log
           imagePullPolicy: Always
         restartPolicy: Always
