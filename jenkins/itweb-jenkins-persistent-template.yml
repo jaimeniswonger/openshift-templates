@@ -48,7 +48,7 @@ objects:
       sourceStrategy:
         from:
           kind: DockerImage
-          name: 'openshift/jenkins-2-centos7:v3.9'
+          name: 'openshift/jenkins-2-centos7:v3.11'
       type: Source
     source:          
       git:
@@ -136,7 +136,17 @@ objects:
           - name: OVERRIDE_PV_PLUGINS_WITH_IMAGE_PLUGINS
             value: 'true'
           - name: OVERRIDE_PV_CONFIG_WITH_IMAGE_CONFIG
-            value: 'true'            
+            value: 'true'
+          - name: AQUA_PASSWORD
+            value: '{aqua.jenkins_scanner_password}'
+          - name: CHECKMARX_PASSWORD
+            value: '{aqua.checkmarx_password}'
+          - name: NEXUSIQ_PASSWORD
+            value: '{aqua.nexusiq_password}'
+          - name: GIT_SSH_USERNAME
+            value: '{aqua.git_ssh_username}'
+          - name: GIT_PRIVATE_KEY
+            value: '{aqua.git_private_key}'            
           image: ${NAMESPACE}/${JENKINS_SERVICE_NAME}
           imagePullPolicy: IfNotPresent
           livenessProbe:
@@ -145,14 +155,14 @@ objects:
               path: /login
               port: 8080
             initialDelaySeconds: 420
-            timeoutSeconds: 3
+            timeoutSeconds: 30
           name: jenkins
           readinessProbe:
             httpGet:
               path: /login
               port: 8080
-            initialDelaySeconds: 3
-            timeoutSeconds: 3
+            initialDelaySeconds: 240
+            timeoutSeconds: 30
           resources:
             limits:
               cpu: ${CPU_LIMIT}
@@ -245,6 +255,64 @@ objects:
       name: ${JENKINS_SERVICE_NAME}
     sessionAffinity: None
     type: ClusterIP
+# SLAVE CONFIG MAP    
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: jenkins-aqua-slave
+    labels:
+      role: jenkins-slave
+      app: ${JENKINS_SERVICE_NAME}
+  data:
+    aqua: |-
+      <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+        <inheritFrom></inheritFrom>
+        <name>aqua</name>
+        <namespace></namespace>
+        <privileged>false</privileged>
+        <alwaysPullImage>false</alwaysPullImage>
+        <instanceCap>2147483647</instanceCap>
+        <slaveConnectTimeout>100</slaveConnectTimeout>
+        <idleMinutes>0</idleMinutes>
+        <activeDeadlineSeconds>0</activeDeadlineSeconds>
+        <label>aqua</label>
+        <nodeSelector></nodeSelector>
+        <nodeUsageMode>EXCLUSIVE</nodeUsageMode>
+        <customWorkspaceVolumeEnabled>false</customWorkspaceVolumeEnabled>
+        <workspaceVolume class="org.csanchez.jenkins.plugins.kubernetes.volumes.workspace.EmptyDirWorkspaceVolume">
+          <memory>false</memory>
+        </workspaceVolume>
+        <volumes/>
+        <containers>
+          <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+            <name>jnlp</name>
+            <image>docker-registry.default.svc:5000/itweb-ci-cd/jenkins-slave-aqua-centos:latest</image>
+            <privileged>false</privileged>
+            <alwaysPullImage>false</alwaysPullImage>
+            <workingDir>/tmp</workingDir>
+            <command></command>
+            <args>${computer.jnlpmac} ${computer.name}</args>
+            <ttyEnabled>false</ttyEnabled>
+            <resourceRequestCpu></resourceRequestCpu>
+            <resourceRequestMemory></resourceRequestMemory>
+            <resourceLimitCpu></resourceLimitCpu>
+            <resourceLimitMemory></resourceLimitMemory>
+            <envVars/>
+            <ports/>
+            <livenessProbe>
+              <execArgs></execArgs>
+              <timeoutSeconds>0</timeoutSeconds>
+              <initialDelaySeconds>0</initialDelaySeconds>
+              <failureThreshold>0</failureThreshold>
+              <periodSeconds>0</periodSeconds>
+              <successThreshold>0</successThreshold>
+            </livenessProbe>
+          </org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+        </containers>
+        <envVars/>
+        <annotations/>
+        <imagePullSecrets/>
+      </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>    
 parameters:
 - description: The name of the OpenShift Service exposed for the Jenkins container.
   displayName: Jenkins Service Name

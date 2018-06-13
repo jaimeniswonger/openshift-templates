@@ -205,8 +205,8 @@ objects:
                   - /bin/sh
                   - '-c'
                   - >-
-                  STATUS=$(curl --insecure --silent http://$HOSTNAME:8081/health
-                  | jq -r '.["status"]')
+                    STATUS=$(curl --insecure --silent http://$HOSTNAME:8081/health
+                    | jq -r '.["status"]')
                     
                     if [ "$STATUS" == "UP" ]
 

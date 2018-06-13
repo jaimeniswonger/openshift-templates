@@ -76,7 +76,69 @@ objects:
                   }
                 }
               }
-          
+              
+              stage('Aqua Scan') {
+                agent { node { label 'aqua' } }
+                steps {
+                  script {
+                      
+                    // Login
+                    withCredentials([usernamePassword(credentialsId: 'aqua-credentials', usernameVariable: 'AQUA_USERNAME', passwordVariable: 'AQUA_PASSWORD')]) {
+  
+                      def username = env.AQUA_USERNAME
+                      def password = env.AQUA_PASSWORD
+                      
+                      def token = sh(
+                              script: "curl -v -X POST \
+                                          http://aqua-csp.aqua.svc/api/v1/login \
+                                          -H 'Cache-Control: no-cache' \
+                                          -H 'Content-Type: application/json' \
+                                          -d '{\"id\": \"${username}\",\"password\": \"${password}\"}' | jq -r '.[\"token\"]'",
+                              returnStdout: true
+                          ).trim()
+                          
+                      // Start Scan
+                      sh (
+                        script: "curl -s -X POST \
+                            http://aqua-csp.aqua.svc/api/v1/scanner/registry/OpenShift%20Reg/image/itweb-develop/userpreference-service/scan \
+                            -H 'Authorization: Bearer ${token}' \
+                            -H 'Cache-Control: no-cache'"
+                      )
+  
+                      // Wait for scan to complete        
+                      timeout(5) {
+                          waitUntil {
+                              def status = sh (
+                                    script: "curl -s -X GET \
+                                      http://aqua-csp.aqua.svc/api/v1/scanner/registry/OpenShift%20Reg/image/itweb-develop/userpreference-service/status \
+                                      -H 'Authorization: Bearer ${token}' \
+                                      -H 'Cache-Control: no-cache' | jq -r '.[\"status\"]'",
+                                    returnStdout: true
+                              ).trim()
+                              sh ("echo ${status}")
+                              return (status == "Scanned")
+                          }
+                      }
+                        
+                      // Get scan results
+                      def disallowed = sh (
+                          script: "curl -s -X GET \
+                              http://aqua-csp.aqua.svc/api/v1/scanner/registry/OpenShift%20Reg/image/itweb-develop/userpreference-service/scan_result \
+                              -H 'Authorization: Bearer ${token}' \
+                              -H 'Cache-Control: no-cache' | jq -r '.[\"disallowed\"]'",
+                          returnStdout: true
+                      ).trim().toBoolean()
+                        
+                      sh ("echo 'Image disallowed by Aqua Scanner: ${disallowed}'")
+                    
+                      if (disallowed) {
+                          sh ("exit 1")
+                      }
+                    }     
+                  }
+                }
+              }
+                          
               stage('Deploy') {
                 steps {
                   openshiftDeploy(namespace: '${DEV_NAMESPACE}', depCfg: '${APP_NAME}')
