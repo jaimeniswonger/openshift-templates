@@ -8,7 +8,7 @@ metadata:
     iconClass: icon-spring
     tags: builder, spring-boot, spring-cloud, config
 objects:
-# IMAGE STREAM DEFINITION
+# IMAGE STREAM
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -17,8 +17,6 @@ objects:
       app: ${APP_NAME}
     creationTimestamp: null
   spec: {}
-  status:
-    dockerImageRepository:
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -38,8 +36,8 @@ objects:
         name: openjdk:8-jre-alpine
       name: 8-jre-alpine
       referencePolicy:
-        type: Source    
-# BUILD CONFIG
+        type: Source
+# BUILD CONFIG - builder
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -47,13 +45,6 @@ objects:
     labels:
       app: ${APP_NAME}
   spec:
-    source:
-      type: Git
-      git:
-        uri: ${GIT_URL}
-        ref: ${GIT_REF}
-      sourceSecret:
-        name: ${GIT_SECRET}
     strategy:
       type: Source
       sourceStrategy:
@@ -72,6 +63,7 @@ objects:
     - type: ConfigChange
     - type: ImageChange 
       imageChange: {}
+# BUILD CONFIG - runtime      
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -79,33 +71,30 @@ objects:
     labels:
       app: ${APP_NAME}
   spec:
-    source:
-      type: Git
-      git:
-        uri: ${GIT_URL}
-        ref: ${GIT_REF}
-      sourceSecret:
-            name: ${GIT_SECRET}
-    strategy:
-      type: Source
-      sourceStrategy:
-        from:
-          kind: ImageStreamTag
-          name: springboot-s2i:latest
-        env:
-          - name: NEXUS_HOST
-            value: ${NEXUS_HOST}          
     output:
       to:
         kind: ImageStreamTag
         name: ${APP_NAME}:latest
-    triggers:
-    - generic:
-        secret: ${GENERIC_TRIGGER_SECRET}
-      type: Generic
-    - type: ConfigChange
-    - imageChange: {}
-      type: ImageChange
+    source:
+      type: Dockerfile
+      dockerfile: |
+        FROM itweb-springboot-runtime
+        COPY application.jar /
+        CMD ["sh", "/usr/local/bin/start-application.sh"]
+      images:
+      - from:
+          kind: ImageStreamTag
+          name: ${APP_NAME}-builder:latest
+        paths:
+        - destinationDir: .
+          sourcePath: /opt/app-root/src/application.jar
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'itweb-springboot-runtime:latest'
+          namespace: itweb-infra
 # DEPLOYMENT CONFIG
 - apiVersion: v1
   kind: DeploymentConfig
@@ -127,7 +116,6 @@ objects:
       - type: ConfigChange
       - type: ImageChange
         imageChangeParams:
-          automatic: false
           containerNames:
             - ${APP_NAME}
           from:
@@ -173,18 +161,17 @@ objects:
                 path: /health
                 port: 8081
                 scheme: HTTP
-              initialDelaySeconds: 5
-              timeoutSeconds: 1
-              periodSeconds: 10
+              initialDelaySeconds: 45
+              timeoutSeconds: 2
+              periodSeconds: 15
               successThreshold: 1
-              failureThreshold: 3
+              failureThreshold: 5
             terminationMessagePath: /dev/termination-log
             imagePullPolicy: Always
         restartPolicy: Always
         terminationGracePeriodSeconds: 30
         dnsPolicy: ClusterFirst
         securityContext: {}
-  status: {}
 # SERVICE CONFIG
 - apiVersion: v1
   kind: Service
