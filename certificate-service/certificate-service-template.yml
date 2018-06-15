@@ -39,7 +39,7 @@ objects:
       name: 8-jre-alpine
       referencePolicy:
         type: Source
-# BUILD CONFIG
+# BUILD CONFIG - builder
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -65,6 +65,7 @@ objects:
     - type: ConfigChange
     - type: ImageChange 
       imageChange: {}
+# BUILD CONFIG - runtime      
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -79,9 +80,9 @@ objects:
     source:
       type: Dockerfile
       dockerfile: |
-        FROM openjdk:8-jre-alpine
+        FROM itweb-springboot-runtime
         COPY application.jar /
-        CMD java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -jar /application.jar
+        CMD ["sh", "/usr/local/bin/start-application.sh"]
       images:
       - from:
           kind: ImageStreamTag
@@ -94,7 +95,8 @@ objects:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: openjdk:8-jre-alpine
+          name: 'itweb-springboot-runtime:latest'
+          namespace: itweb-infra
 # DEPLOYMENT CONFIG
 - apiVersion: v1
   kind: DeploymentConfig
@@ -183,18 +185,38 @@ objects:
                 path: /health
                 port: 8081
                 scheme: HTTP
-              initialDelaySeconds: 5
-              timeoutSeconds: 1
-              periodSeconds: 10
+              initialDelaySeconds: 45
+              timeoutSeconds: 2
+              periodSeconds: 15
               successThreshold: 1
-              failureThreshold: 3
+              failureThreshold: 5
+            livenessProbe:
+              exec:
+                command:
+                  - /bin/sh
+                  - '-c'
+                  - >-
+                    STATUS=$(curl --insecure --silent http://$HOSTNAME:8081/health
+                    | jq -r '.["status"]')
+                    
+                    if [ "$STATUS" == "UP" ]
+
+                    then
+                            exit 0;
+                    else
+                            exit 1;
+                    fi                    
+              initialDelaySeconds: 240
+              timeoutSeconds: 2
+              periodSeconds: 30
+              successThreshold: 1
+              failureThreshold: 2
             terminationMessagePath: /dev/termination-log
             imagePullPolicy: Always
         restartPolicy: Always
         terminationGracePeriodSeconds: 30
         dnsPolicy: ClusterFirst
         securityContext: {}
-  status: {}
 # SERVICE CONFIG
 - apiVersion: v1
   kind: Service
@@ -219,6 +241,21 @@ objects:
     sessionAffinity: None
   status:
     loadBalancer: {}
+# ROUTE CONFIG
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: ${APP_NAME}
+    labels:
+      app: ${APP_NAME}
+  spec:
+    host: ${ROUTE_HOST}
+    to:
+      kind: Service
+      name: ${APP_NAME}
+    port:
+      targetPort: 8080-tcp
+    wildcardPolicy: None    
 # PARAMETERS    
 parameters:
 - description: The name of the new application
