@@ -1,0 +1,1 @@
+oc create configmap conjur-config --from-file=ssl-certificate=conjur-itweb.pem -n itweb-develop

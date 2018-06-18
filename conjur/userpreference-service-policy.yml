@@ -1,0 +1,34 @@
+---
+- !policy
+  id: userpreference-service
+  owner: !group developers
+  
+# This policy defines the identity structure for the service
+  body:
+  - !layer
+
+# This policy grants access to userpreference resources
+- !policy
+  id: userpreference-resources
+  owner: !group operations
+  body:
+
+  #- &variables
+#    - !variable db-password
+
+#  - !permit
+#    resource: *variables
+#    privileges: [ read, execute ]
+#    roles:
+#    - !layer /userpreference-service
+    
+  - !variable db-password
+
+  - !permit
+    privileges: [ read, execute ]
+    roles:
+    - !layer /userpreference-service
+    resources:
+    - !variable db-password
+    - !variable /CYBER-ARK-T/POC2/OC_POC/Operating System-ACILUWManaged-acslan.ac.americancentury.com-WEBAWS/password 
+    

@@ -1,0 +1,13 @@
+---
+kind: RoleBinding
+apiVersion: v1
+metadata:
+  name: itweb-develop-conjur-authenticator-role-binding
+  namespace: itweb-develop
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: conjur-ee
+roleRef:
+  kind: ClusterRole
+  name: conjur-authenticator
