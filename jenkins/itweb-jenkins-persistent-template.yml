@@ -47,8 +47,8 @@ objects:
     strategy:
       sourceStrategy:
         from:
-          kind: DockerImage
-          name: 'openshift/jenkins-2-centos7:v3.11'
+          kind: ImageStreamTag
+          name: 'itweb-jenkins-base:latest'      
       type: Source
     source:          
       git:
