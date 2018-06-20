@@ -25,11 +25,15 @@ objects:
       app: ${APP_NAME}    
   spec:
     strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'itweb-springboot-runtime:latest'
       type: Docker
     source:
       type: Docker
       dockerfile: |-
-        FROM openjdk:8-jre-alpine
+        FROM itweb-springboot-runtime
         EXPOSE 9411
         RUN wget -O zipkin.jar 'https://search.maven.org/remote_content?g=io.zipkin.java&a=zipkin-server&v=LATEST&c=exec'
         RUN chown -R 1001:0 zipkin.jar
