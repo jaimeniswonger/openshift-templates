@@ -125,24 +125,7 @@ objects:
     resources:
       requests:
         storage: ${VOLUME_CAPACITY}
-# IMAGE STREAMS
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    labels:
-      app: ${SONARQUBE_SERVICE_NAME}
-    name: sonarqube
-  spec:
-    tags:
-    - annotations:
-        description: The ITWEB SonarQube Docker image
-        tags: ${SONARQUBE_SERVICE_NAME}
-      from:
-        kind: DockerImage
-        name: owasp/sonarqube:latest
-        ## owasp/sonarqube:latest
-      importPolicy: {}
-      name: latest
+# IMAGE STREAM
 - apiVersion: v1
   kind: ImageStream
   metadata:
@@ -170,7 +153,7 @@ objects:
     source:
       type: Dockerfile
       dockerfile: |-
-        FROM owasp/sonarqube:latest
+        FROM owasp-sonarqube:v1.0
         ENV SQ_CX_PLUGIN_VERSION=8.60.0 \
             SQ_CX_SAST_VERSION=8.6.0
         RUN set -x \
@@ -187,7 +170,7 @@ objects:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: sonarqube:latest
+          name: owasp-sonarqube:v1.0
         env:
         - name: SQ_CX_PLUGIN_VERSION
           value: 8.60.0
