@@ -264,5 +264,5 @@ parameters:
 - description: The URL to reach the Nexus Host
   displayName: Nexus Host URL
   name: NEXUS_HOST
-  value: http://nexus3.itweb-ci-cd.svc:8081
+  value: http://itweb-nexus3.itweb-ci-cd.svc:8081
   required: true

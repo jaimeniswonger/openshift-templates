@@ -342,7 +342,7 @@ parameters:
 - description: Nexus Host
   displayName: Nexus Host
   name: NEXUS_HOST
-  value: http://nexus3.itweb-ci-cd.svc:8081
+  value: http://itweb-nexus3.itweb-ci-cd.svc:8081
   required: true  
 - description: The namespace where Conjur is deployed
   displayName: Conjur Namespace

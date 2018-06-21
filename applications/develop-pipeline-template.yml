@@ -87,10 +87,12 @@ objects:
   
                       def username = env.AQUA_USERNAME
                       def password = env.AQUA_PASSWORD
+                      def aquaScannerUrl = "http://aqua-web.aqua-security.svc:8080"
+                      def aquaRegistryName = "OpenShiftRegistry"
                       
                       def token = sh(
                               script: "curl -v -X POST \
-                                          http://aqua-csp.aqua.svc/api/v1/login \
+                                          ${aquaScannerUrl}/api/v1/login \
                                           -H 'Cache-Control: no-cache' \
                                           -H 'Content-Type: application/json' \
                                           -d '{\"id\": \"${username}\",\"password\": \"${password}\"}' | jq -r '.[\"token\"]'",
@@ -100,7 +102,7 @@ objects:
                       // Start Scan
                       sh (
                         script: "curl -s -X POST \
-                            http://aqua-csp.aqua.svc/api/v1/scanner/registry/OpenShift%20Reg/image/itweb-develop/userpreference-service/scan \
+                            ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/${DEV_NAMESPACE}/${APP_NAME}/scan \
                             -H 'Authorization: Bearer ${token}' \
                             -H 'Cache-Control: no-cache'"
                       )
@@ -110,7 +112,7 @@ objects:
                           waitUntil {
                               def status = sh (
                                     script: "curl -s -X GET \
-                                      http://aqua-csp.aqua.svc/api/v1/scanner/registry/OpenShift%20Reg/image/itweb-develop/userpreference-service/status \
+                                      ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/${DEV_NAMESPACE}/${APP_NAME}/status \
                                       -H 'Authorization: Bearer ${token}' \
                                       -H 'Cache-Control: no-cache' | jq -r '.[\"status\"]'",
                                     returnStdout: true
@@ -123,7 +125,7 @@ objects:
                       // Get scan results
                       def disallowed = sh (
                           script: "curl -s -X GET \
-                              http://aqua-csp.aqua.svc/api/v1/scanner/registry/OpenShift%20Reg/image/itweb-develop/userpreference-service/scan_result \
+                              ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/${DEV_NAMESPACE}/${APP_NAME}/scan_result \
                               -H 'Authorization: Bearer ${token}' \
                               -H 'Cache-Control: no-cache' | jq -r '.[\"disallowed\"]'",
                           returnStdout: true
