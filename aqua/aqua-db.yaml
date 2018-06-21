@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aqua-db
+  labels:
+    app: aqua-db
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: aqua-db
+  type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aqua-db
+spec:
+  template:
+    metadata:
+      labels:
+        app: aqua-db
+      name: aqua-db
+    spec:
+      serviceAccount: aqua-account
+      #imagePullSecrets:
+      #  - name: dockerhub
+      containers:
+      - name: aqua-db
+        image: docker-registry.default.svc:5000/aqua-security/aqua-db:3.2.rc5
+        securityContext:
+          privileged: true
+        env:
+          - name: POSTGRES_PASSWORD
+            value: "password"
+          - name: ADMIN_PASSWORD
+            value: "aquaTest123"
+        ports:
+        - containerPort: 5432
