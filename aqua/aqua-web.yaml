@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: aqua-web
+spec:
+  host: aqua.awsos2.americancentury.com
+  to:
+    kind: Service
+    name: aqua-web
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aqua-web
+  labels:
+    app: aqua-web
+spec:
+  ports:
+    - nodePort: 30080
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: aqua-web
+  type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: aqua-web
+spec:
+  template:
+    metadata:
+      labels:
+        app: aqua-web
+      name: aqua-web
+    spec:
+      serviceAccount: aqua-account
+      #imagePullSecrets:
+      #  - name: dockerhub
+      containers:
+      - name: aqua-web
+        image: docker-registry.default.svc:5000/aqua-security/aqua-server:3.2.rc5
+        securityContext:
+          privileged: true
+        env:
+          - name: SCALOCK_DBUSER
+            value: "postgres"
+          - name: SCALOCK_DBPASSWORD
+            value: "password"
+          - name: SCALOCK_DBNAME
+            value: "scalock"
+          - name: SCALOCK_DBHOST
+            value: aqua-db.aqua-security.svc
+          - name: SCALOCK_DBPORT
+            value: "5432"
+          - name: SCALOCK_AUDIT_DBUSER
+            value: "postgres"
+          - name: SCALOCK_AUDIT_DBPASSWORD
+            value: "password"
+          - name: SCALOCK_AUDIT_DBNAME
+            value: "slk_audit"
+          - name: SCALOCK_AUDIT_DBHOST
+            value: aqua-db.aqua-security.svc
+          - name: SCALOCK_AUDIT_DBPORT
+            value: "5432"
+          - name: LICENSE_TOKEN
+            value: "z-PrBrBroexnjk4qC4OvglYK71U4ifTvPY77kmhfgWt9XfXdCnphJg5-01acayu0kPWYWZBCzblyRgEb-ju0P6HQnbCzrNtjacO3qWuUnfT_0xzBQztWLehc0eOu0BSkEjFF7jra6LIyJ9-v73KfGh69wZqzMV-BdA7DGMFvS2XBeaSNvWhKQ4r9FfPWizQgZf7hP01vCBYfEoo8B0p3rDbLBqKa09RY8bMG8eTznmg1RkR67Faw5cuyj7dfOEMIyKWu_fRSHT0QXP9UH6DlA5JpQddrBnFYv2XY--eg25SnhoRb5keKbsYOQh77VOo-ZvbQPYN0v74guasAwVpjgjgxTmr2_zFzUcvx9-fGJwy4oMUDHJuPfKRhd3RMtMFAl50g6z1GJDq1Eqv6i_P77Ws4CB5ImxRWWeV8yMp574RYYDwrSuZfMuHFeP3ZM8br94E6gY4EXny1gunJj9gKNDEErWbnC6hceCXHUb0J9tfSuqITd3QMy8RYQuR7"
+          - name: ADMIN_PASSWORD
+            value: "aquaTest123"
+        volumeMounts:
+          - mountPath: /var/run/docker.sock
+            name: docker-socket-mount
+        ports:
+        - containerPort: 8080
+      volumes:
+        - name: docker-socket-mount
+          hostPath:
+            path: /var/run/docker.sock
