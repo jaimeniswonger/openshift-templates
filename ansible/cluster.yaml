@@ -1,0 +1,28 @@
+---
+- hosts: openshift_hosts
+  remote_user: h76
+
+#  vars_prompt:
+#    - name: "openshift_username"
+#      prompt: "Please provide an Openshift username with admin rights"
+#      private: no
+#      default: "admin"
+#    - name: "openshift_password"
+#      prompt: "Password"
+#      private: yes
+      
+#  pre_tasks:
+#  - name: Login to Openshift CLI
+#    action: command oc login -u {{ openshift_username }} -p {{ openshift_password }}
+#  - include_tasks: roles/common/tasks/check-required-variables.yaml
+#  - include_tasks: shared/tasks/pre-install.yaml
+      
+  roles:
+   - common
+#   - infrastructure
+#  - ci-cd
+#  - development
+#  - production
+                    
+#  post_tasks:
+#  - include_tasks: shared/tasks/post-install.yaml

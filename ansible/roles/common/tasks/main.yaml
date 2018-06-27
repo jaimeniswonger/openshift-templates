@@ -1,0 +1,6 @@
+---
+- include_vars:
+    file: main.yaml
+
+- name: Create "developers" group
+  action: command oc adm groups new developers {{ openshift_developers }}
