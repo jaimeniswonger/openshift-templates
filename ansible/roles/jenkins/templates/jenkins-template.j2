@@ -1,0 +1,324 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: itweb-jenkins-persistent-template
+message: A Jenkins service has been created in your project.  Log into Jenkins with
+  your OpenShift account.  The tutorial at https://github.com/openshift/origin/blob/master/examples/jenkins/README.md
+  contains more information about using this template.
+metadata:
+  annotations:
+    description: |-
+      Jenkins service, with persistent storage.
+
+      NOTE: You must have persistent volumes available in your cluster to use this template.
+    iconClass: icon-jenkins
+    openshift.io/display-name: Jenkins
+    openshift.io/documentation-url: https://docs.openshift.org/latest/using_images/other_images/jenkins.html
+    openshift.io/long-description: This template deploys a Jenkins server capable
+      of managing OpenShift Pipeline builds and supporting OpenShift-based oauth login.
+    openshift.io/provider-display-name: Red Hat, Inc.
+    openshift.io/support-url: https://access.redhat.com
+    tags: instant-app,jenkins,itweb
+  name: itweb-jenkins-persistent
+objects:
+
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+      - annotations:
+          description: The Jenkins image for ITWEB
+          tags: {{ app_name }}
+
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'itweb-jenkins-base:latest'      
+      type: Source
+    source:          
+      git:
+        uri: {{ git_url }}
+        ref: {{ git_branch }}
+      type: Git
+      sourceSecret:
+        name: {{ git_secret }}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: {{ app_name }}:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers:
+      - generic:
+          secret: {{ app_name }}
+        type: Generic
+
+# ROUTE        
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: http://{.spec.host}{.spec.path}
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    host: {{ route_host }}
+    tls:
+      insecureEdgeTerminationPolicy: Redirect
+      termination: edge
+    to:
+      kind: Service
+      name: {{ app_name }}
+
+# PERSISTENT VOLUME CLAIM      
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: {{ volume_capacity }}
+
+# DEPLOYMENT CONFIG        
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    replicas: 1
+    selector:
+      name: {{ app_name }}
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: {{ app_name }}
+      spec:
+        containers:
+        - capabilities: {}
+          env:
+          - name: OPENSHIFT_ENABLE_OAUTH
+            value: "true"
+          - name: OPENSHIFT_ENABLE_REDIRECT_PROMPT
+            value: "true"
+          - name: KUBERNETES_MASTER
+            value: https://kubernetes.default:443
+          - name: KUBERNETES_TRUST_CERTIFICATES
+            value: "true"
+          - name: JENKINS_SERVICE_NAME
+            value: {{ app_name }}
+          - name: JNLP_SERVICE_NAME
+            value: "{{ app_name }}-jnlp"
+          - name: OVERRIDE_PV_PLUGINS_WITH_IMAGE_PLUGINS
+            value: "true"
+          - name: OVERRIDE_PV_CONFIG_WITH_IMAGE_CONFIG
+            value: "true"
+          - name: AQUA_PASSWORD
+            value: "{aqua.jenkins_scanner_password}"
+          - name: CHECKMARX_PASSWORD
+            value: "{aqua.checkmarx_password}"
+          - name: NEXUSIQ_PASSWORD
+            value: "{aqua.nexusiq_password}"
+          - name: GIT_SSH_USERNAME
+            value: "{aqua.git_ssh_username}"
+          - name: GIT_PRIVATE_KEY
+            value: "{aqua.git_private_key}"            
+          image: {{ openshift_project_name }}/{{ app_name }}
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 420
+            timeoutSeconds: 30
+          name: jenkins
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 240
+            timeoutSeconds: 30
+          resources:
+            limits:
+              cpu: {{ cpu_limit }}
+              memory: {{ memory_limit }}
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /var/lib/jenkins
+            name: {{ app_name }}-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        serviceAccountName: {{ app_name }}
+        volumes:
+        - name: {{ app_name }}-data
+          persistentVolumeClaim:
+            claimName: {{ app_name }}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - jenkins
+        from:
+          kind: ImageStreamTag
+          name: {{ app_name }}:latest
+          namespace: {{ openshift_project_name }}
+        lastTriggeredImage: ""
+      type: ImageChange
+    - type: ConfigChange
+
+# SERVICE ACCOUNT    
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    annotations:
+      serviceaccounts.openshift.io/oauth-redirectreference.jenkins: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"{{ app_name }}"}}'
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+
+# ROLE BINDING      
+- apiVersion: v1
+  groupNames: null
+  kind: RoleBinding
+  metadata:
+    name: {{ app_name }}_edit
+    labels:
+      app: {{ app_name }}
+  roleRef:
+    name: edit
+  subjects:
+  - kind: ServiceAccount
+    name: {{ app_name }}
+
+# SERVICE JNLP    
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: {{ app_name }}-jnlp
+    labels:
+      app: {{ app_name }}
+  spec:
+    ports:
+    - name: agent
+      nodePort: 0
+      port: 50000
+      protocol: TCP
+      targetPort: 50000
+    selector:
+      name: {{ app_name }}
+    sessionAffinity: None
+    type: ClusterIP
+
+# SERVICE    
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      service.alpha.openshift.io/dependencies: '[{"name": "{{ app_name }}-jnlp",
+        "namespace": "", "kind": "Service"}]'
+      service.openshift.io/infrastructure: "true"
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    ports:
+    - name: web
+      nodePort: 0
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      name: {{ app_name }}
+    sessionAffinity: None
+    type: ClusterIP
+
+# SLAVE CONFIG MAP    
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: jenkins-aqua-slave
+    labels:
+      role: jenkins-slave
+      app: {{ app_name }}
+  data:
+    aqua: |-
+      <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+        <inheritFrom></inheritFrom>
+        <name>aqua</name>
+        <namespace></namespace>
+        <privileged>false</privileged>
+        <alwaysPullImage>false</alwaysPullImage>
+        <instanceCap>2147483647</instanceCap>
+        <slaveConnectTimeout>100</slaveConnectTimeout>
+        <idleMinutes>0</idleMinutes>
+        <activeDeadlineSeconds>0</activeDeadlineSeconds>
+        <label>aqua</label>
+        <nodeSelector></nodeSelector>
+        <nodeUsageMode>EXCLUSIVE</nodeUsageMode>
+        <customWorkspaceVolumeEnabled>false</customWorkspaceVolumeEnabled>
+        <workspaceVolume class="org.csanchez.jenkins.plugins.kubernetes.volumes.workspace.EmptyDirWorkspaceVolume">
+          <memory>false</memory>
+        </workspaceVolume>
+        <volumes/>
+        <containers>
+          <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+            <name>jnlp</name>
+            <image>docker-registry.default.svc:5000/{{ openshift_project_name }}/jenkins-slave-aqua-centos:latest</image>
+            <privileged>false</privileged>
+            <alwaysPullImage>false</alwaysPullImage>
+            <workingDir>/tmp</workingDir>
+            <command></command>
+            <args>${computer.jnlpmac} ${computer.name}</args>
+            <ttyEnabled>false</ttyEnabled>
+            <resourceRequestCpu></resourceRequestCpu>
+            <resourceRequestMemory></resourceRequestMemory>
+            <resourceLimitCpu></resourceLimitCpu>
+            <resourceLimitMemory></resourceLimitMemory>
+            <envVars/>
+            <ports/>
+            <livenessProbe>
+              <execArgs></execArgs>
+              <timeoutSeconds>0</timeoutSeconds>
+              <initialDelaySeconds>0</initialDelaySeconds>
+              <failureThreshold>0</failureThreshold>
+              <periodSeconds>0</periodSeconds>
+              <successThreshold>0</successThreshold>
+            </livenessProbe>
+          </org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+        </containers>
+        <envVars/>
+        <annotations/>
+        <imagePullSecrets/>
+      </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
