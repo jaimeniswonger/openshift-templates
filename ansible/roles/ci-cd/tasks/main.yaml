@@ -3,6 +3,7 @@
     file: main.yaml
 
 - include_tasks: ../../../shared/tasks/openshift/create-openshift-project.yaml
+- include_tasks: ../../../shared/tasks/openshift/create-git-private-key.yaml
 
 - include_role:
     name: jenkins

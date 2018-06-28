@@ -1,0 +1,19 @@
+---
+- name: Check for existence of secret named git-private-key
+  action: command oc get secret git-private-key -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: secret_check_result
+  
+#- debug: var=secret_check_result
+
+#- debug: var=git_private_key 
+
+- name: Generate git-private-key secret yaml from template
+  template:
+    src: "./templates/git-private-key.j2"
+    dest: "{{ mktemp.stdout }}/git-private-key.yaml"
+  changed_when: no
+  when: secret_check_result.stdout == ""
+
+- name: Install secret named git-private-key
+  action: command oc create -f {{ mktemp.stdout }}/git-private-key.yaml -n {{ openshift_project_name }}
+  when: secret_check_result.stdout == ""

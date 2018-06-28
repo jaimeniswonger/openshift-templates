@@ -1,0 +1,8 @@
+---
+- name: Check if build labeled template=itweb-jenkins-base has already been run
+  action: command oc get builds -l template=itweb-jenkins-base -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: build_already_run_result
+  
+- name: Start itweb-jenkins-base build
+  action: command oc start-build itweb-jenkins-base -n {{ openshift_project_name }}
+  when: build_already_run_result.stdout == ""
