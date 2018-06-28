@@ -6,6 +6,9 @@
     
   tasks:
   - include_role:
+      name: ci-cd
+      tasks_from: deprovision  
+  - include_role:
       name: infrastructure
       tasks_from: deprovision
       
