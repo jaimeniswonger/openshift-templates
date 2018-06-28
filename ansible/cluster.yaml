@@ -10,11 +10,11 @@
 #      prompt: "Password"
 #      private: yes
       
-#  pre_tasks:
-#  - name: Login to Openshift CLI
-#    action: command oc login -u {{ openshift_username }} -p {{ openshift_password }}
-#  - include_tasks: roles/common/tasks/check-required-variables.yaml
-#  - include_tasks: shared/tasks/pre-install.yaml
+  pre_tasks:
+  - name: Login to Openshift CLI
+    action: command oc login -u {{ openshift_username }} -p {{ openshift_password }}
+  - include_tasks: shared/tasks/check-required-variables.yaml
+  - include_tasks: shared/tasks/pre-install.yaml
       
   roles:
    - common
@@ -23,5 +23,5 @@
 #  - development
 #  - production
                     
-#  post_tasks:
-#  - include_tasks: shared/tasks/post-install.yaml
+  post_tasks:
+  - include_tasks: shared/tasks/post-install.yaml

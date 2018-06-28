@@ -1,0 +1,10 @@
+---
+- name: Verify openshift_project_name is set
+  fail:
+    msg: openshift_project_name must be set
+  when: openshift_project_name is not defined or openshift_project_name == ""  
+
+- name: Verify openshift_project_display_name is set
+  fail:
+    msg: openshift_project_display_name must be set
+  when: openshift_project_display_name is not defined or openshift_project_display_name == ""  
