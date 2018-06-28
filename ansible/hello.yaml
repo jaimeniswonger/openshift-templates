@@ -1,0 +1,8 @@
+---
+- name: Hello - Sanity check
+  hosts: master_nodes
+  tasks:
+    - name: Hello Message
+      debug:
+        msg: "Hello World!"
+  
