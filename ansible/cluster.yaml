@@ -11,9 +11,7 @@
 #      private: yes
       
   pre_tasks:
-  - name: Login to Openshift CLI
-    action: command oc login -u {{ openshift_username }} -p {{ openshift_password }}
-  - include_tasks: shared/tasks/check-required-variables.yaml
+  - include_tasks: shared/tasks/openshift-login.yaml
   - include_tasks: shared/tasks/pre-install.yaml
       
   roles:

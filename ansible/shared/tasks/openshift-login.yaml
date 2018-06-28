@@ -1,0 +1,3 @@
+---
+- name: Login to Openshift CLI
+  action: command oc login -u {{ openshift_username }} -p {{ openshift_password }}  
