@@ -1,0 +1,6 @@
+---
+openshift_project_name: itweb-develop
+openshift_project_display_name: 'ITWEB - Development'
+openshift_project_description: 'The ITWEB development environment'
+openshift_project_admin_user: h76
+autostart_pipeline: true

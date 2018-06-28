@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: {{ openshift_project_name }}-pipeline
+  annotations:
+    description: A template for creating {{ openshift_project_name }} pipelines
+    iconClass: icon-jenkins
+    tags: pipeline, jenkins, git, keyhole
+objects:
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: {{ app_name }}-{{ openshift_project_name }}
+    labels:
+      app: {{ app_name }}
+      env: {{ openshift_project_name }}
+  spec:
+    runPolicy: Serial
+    source:
+      git:
+        ref: {{ git_ref }}
+        uri: '{{ git_url }}'
+      type: Git
+    strategy:
+      jenkinsPipelineStrategy:
+        jenkinsfile: >
+          pipeline {
+            agent { node { label 'maven' } }
+            stages {
+              stage('Fetching Source') {
+                steps {
+                  git credentialsId: 'git-private-key', url: '{{ git_url }}', branch: '{{ git_ref }}'                   
+                }
+              }
+              
+              stage('Running Tests') {
+                steps {
+                  sh("mvn clean test")
+                }
+              }
+
+              stage('Building Image') {
+                steps {
+                  script {
+                    openshiftBuild(namespace: '{{ openshift_project_name }}', bldCfg: '{{ app_name }}', showBuildLogs: 'true')
+                  }
+                }
+              }
+
+              stage('Tagging Source') {
+                steps {
+                  script {
+                    def imageSHA;
+                    openshift.withCluster() {
+                      openshift.withProject('{{ openshift_project_name }}') {
+                        // def istag = openshift.selector( "istag/{{ app_name }}:latest" ).object();
+                        // this is not ideal - would be nice to figure out how to get the istag directly
+                        def imageStream = openshift.selector( "is/{{ app_name }}" ).object();
+                        imageSHA = imageStream.status.tags[0].items[0].image.substring(7)
+                        echo "${imageSHA}"
+                      }
+                    }
+
+                    // Need these set for tag and push -- how should we set these?
+                    sh("git config --global user.name '{{ openshift_project_admin_user }}'")
+                    sh("git config --global user.email '{{ openshift_project_admin_user }}@keyholesoftware.com'")
+
+                    withCredentials([sshUserPrivateKey(credentialsId: 'git-private-key', keyFileVariable: 'KEYFILE', passphraseVariable: 'PASSPHRASE', usernameVariable: 'USERNAME')]) {
+                      sshagent(['git-private-key']) {
+                        sh("git tag -a " + imageSHA + " -m 'production image updated'")
+                        sh("git push origin " + imageSHA)
+                      }
+                    }
+                  }
+                }
+              }
+
+              stage('Checking Quality') {
+                steps {
+                  sh("mvn sonar:sonar -Dsonar.host.url=http://sonarqube.ci-cd.svc:9000 -Dsonar.login=eb56c2c12812bd767fdb57d33561e5d15e694dbe")
+                }
+              }
+
+              stage('Deploying Application') {
+                steps {
+                  openshiftDeploy(namespace: '{{ openshift_project_name }}', depCfg: '{{ app_name }}')
+                }
+              }
+
+              stage('Functional Testing') {
+                steps {
+                  sleep 3
+                }
+              }
+
+              stage('Promoting to Production') {
+                steps {
+                  openshiftBuild(namespace: '{{ openshift_ci_cd_project_name }}', bldCfg: '{{ app_name }}-production', showBuildLogs: 'true')
+                }
+              }
+            }
+          }
+      type: JenkinsPipeline
+    triggers:
+      - type: GitHub
+        github:
+          secret: {{ app_name }}-{{ openshift_project_name }}
+        

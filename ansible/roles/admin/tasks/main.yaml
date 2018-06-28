@@ -4,4 +4,4 @@
 
 - name: Create "developers" group
   action: command oc adm groups new developers {{ openshift_developers }}
-  ignore_errors: true
+  ignore_errors: true # need to not really ignore this, but parse error to see if stderr: 'AlreadyExists' was the issue

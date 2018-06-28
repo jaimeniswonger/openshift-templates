@@ -15,8 +15,8 @@
   - include_tasks: shared/tasks/pre-install.yaml
       
   roles:
-   - common
-#   - infrastructure
+   - admin
+   - infrastructure
 #  - ci-cd
 #  - development
 #  - production

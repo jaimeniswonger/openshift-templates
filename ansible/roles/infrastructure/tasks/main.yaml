@@ -1,0 +1,10 @@
+- include_vars:
+    file: main.yaml
+    
+- include_role:
+    name: common
+
+#- include_role:
+#    name: certificate-service
+#  vars:
+#    route_host: certificate.awsos2.americancentury.com

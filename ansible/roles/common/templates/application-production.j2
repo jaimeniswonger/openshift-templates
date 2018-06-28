@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: {{ app_name }}
+  annotations:
+    iconClass: icon-spring
+    tags: builder, spring-boot, spring-cloud, microservice
+objects:
+# IMAGE STREAM DEFINITION
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec: {}
+# DEPLOYMENT CONFIG
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    strategy:
+      type: Rolling
+      rollingParams:
+        updatePeriodSeconds: 1
+        intervalSeconds: 1
+        timeoutSeconds: 600
+        maxUnavailable: 25%
+        maxSurge: 25%
+      resources: {}
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          containerNames:
+            - {{ app_name }}
+          from:
+            kind: ImageStreamTag
+            name: '{{ app_name }}:{{ openshift_project_name }}'
+    replicas: 2
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: {{ app_name }}
+          deploymentconfig: {{ app_name }}
+      spec:
+        containers:
+          - env:
+            - name: spring_cloud_config_uri
+              valueFrom:
+                configMapKeyRef:
+                  key: spring_cloud_config_uri
+                  name: bootstrap-config
+            name: {{ app_name }}
+            image: {{ app_name }}
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 8081
+                protocol: TCP
+            resources: {}
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: 8081
+                scheme: HTTP
+              initialDelaySeconds: 5
+              timeoutSeconds: 1
+              periodSeconds: 10
+              successThreshold: 1
+              failureThreshold: 3
+            terminationMessagePath: /dev/termination-log
+            imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirst
+        securityContext: {}
+  status: {}
+# SERVICE CONFIG
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    ports:
+      - name: 8080-tcp
+        protocol: TCP
+        port: 8080
+        targetPort: 8080
+      - name: 8081-tcp
+        protocol: TCP
+        port: 8081
+        targetPort: 8081
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    type: ClusterIP
+    sessionAffinity: None
+  status:
+    loadBalancer: {}
+# ROUTE CONFIG
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    host: {{ route_host }}
+    to:
+      kind: Service
+      name: {{ app_name }}
+    port:
+      targetPort: 8080-tcp
+    tls:
+      termination: passthrough
+    wildcardPolicy: None

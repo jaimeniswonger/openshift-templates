@@ -1,0 +1,3 @@
+---
+- name: Delete project named {{ openshift_project_name }}
+  action: command oc delete project {{ openshift_project_name }} --ignore-not-found

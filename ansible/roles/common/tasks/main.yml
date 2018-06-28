@@ -1,0 +1,11 @@
+---
+- include_vars:
+    file: main.yaml
+    
+- include_tasks: create-openshift-project.yaml
+
+#- include_tasks: install-bootstrap-configmap.yaml
+#
+#- include_tasks: install-git-secret.yaml
+#
+#- include_tasks: create-rolebindings.yaml

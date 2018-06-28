@@ -1,0 +1,21 @@
+---
+- name: Check for existence of project named {{ openshift_project_name }}
+  action: command oc get project {{ openshift_project_name }} -o name --ignore-not-found
+  register: project_check_result
+    
+#- debug: var=project_check_result
+
+#- name: Create project named {{ openshift_project_name }}
+#  action: command oc new-project {{ openshift_project_name }} --display-name="{{ openshift_project_display_name }}"
+#  when: project_check_result.stdout == ""
+
+- name: Create {{ openshift_project_name }} project json from template
+  template:
+    src: "../../common/templates/project.j2"
+    dest: "{{ mktemp.stdout }}/{{ openshift_project_name }}-project.yaml"
+  changed_when: no
+  when: project_check_result.stdout == ""
+  
+- name: Create project named {{ openshift_project_name }}
+  action: command bash -c "oc process -f {{ mktemp.stdout }}/{{ openshift_project_name }}-project.yaml | oc create -f - -n {{ openshift_project_name }}"
+  when: project_check_result.stdout == ""
