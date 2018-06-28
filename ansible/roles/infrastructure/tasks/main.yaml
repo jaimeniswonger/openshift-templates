@@ -3,6 +3,7 @@
     file: main.yaml
 
 - include_tasks: ../../../shared/tasks/openshift/create-openshift-project.yaml
+- include_tasks: create-rolebindings.yaml
 
 #- include_role:
 #    name: certificate-service
