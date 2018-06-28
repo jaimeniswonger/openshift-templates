@@ -13,5 +13,5 @@
   when: image_check_result.stdout == ""
 
 - name: Install itweb-base-image imagestream and build config
-  action: command bash -c "oc create -f {{ mktemp.stdout }}/itweb-jenkin-base-image.yaml -n {{ openshift_project_name }}"
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/itweb-jenkins-base-image.yaml -n {{ openshift_project_name }}"
   when: image_check_result.stdout == ""
