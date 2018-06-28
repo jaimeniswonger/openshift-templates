@@ -3,7 +3,4 @@
     
 - include_tasks: ../../../shared/tasks/openshift/create-openshift-project.yaml
 
-#- include_role:
-#    name: certificate-service
-#  vars:
-#    route_host: certificate.awsos2.americancentury.com
+#- include_tasks: install-sonarqube.yaml

@@ -2,13 +2,13 @@
 - hosts: master_nodes
 
   pre_tasks:
-  - include_tasks: shared/tasks/openshift-login.yaml
+  - include_tasks: shared/tasks/openshift/openshift-login.yaml
   - include_tasks: shared/tasks/pre-install.yaml
       
   roles:
    - admin
+   - ci-cd
    - infrastructure
-#  - ci-cd
 #  - development
 #  - production
                     

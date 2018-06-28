@@ -1,0 +1,7 @@
+---
+openshift_project_name: itweb-ci-cd
+openshift_project_display_name: 'ITWEB - CI/CD'
+openshift_project_description: 'The namespace for ITWEB CI/CD applications and pipelines'
+openshift_project_admin_user: h76
+autostart_pipeline: true
+sonarqube_url: sonarqube.awsos2.americancentury.com
