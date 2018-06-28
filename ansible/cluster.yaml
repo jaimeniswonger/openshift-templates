@@ -1,6 +1,5 @@
 ---
-- hosts: openshift_hosts
-  remote_user: h76
+- hosts: master_nodes
 
 #  vars_prompt:
 #    - name: "openshift_username"
