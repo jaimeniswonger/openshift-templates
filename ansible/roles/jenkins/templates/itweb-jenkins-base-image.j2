@@ -1,0 +1,42 @@
+####                                              
+#### CREATES THE itweb-jenkins-base IMAGE STREAM AND BUILD CONFIG
+####    - This is the base images for itweb-jenkins
+apiVersion: v1
+kind: List
+items:
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: itweb-jenkins-base
+    labels:
+      template: itweb-jenkins-base
+  spec:
+    lookupPolicy:
+      local: false
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: itweb-jenkins-base
+    labels:
+      template: itweb-jenkins-base
+  spec:
+    strategy:
+      dockerStrategy:
+      type: Docker
+    source:
+      type: Dockerfile
+      dockerfile: |
+        FROM openshift/jenkins-2-centos7:v3.11
+        USER root
+        RUN yum update -y
+        USER 1001    
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'itweb-jenkins-base:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers: {}

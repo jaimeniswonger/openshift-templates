@@ -1,0 +1,17 @@
+---
+- name: Check for existence of itweb-jenkins-base image labeled template=itweb-jenkins-base
+  action: command oc get is -l template=itweb-jenkins-base -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: image_check_result
+  
+#- debug: var=image_check_result
+
+- name: Create itweb-base-image json from template
+  template:
+    src: "itweb-jenkins-base-image.j2"
+    dest: "{{ mktemp.stdout }}/itweb-jenkins-base-image.yaml"
+  changed_when: no
+  when: image_check_result.stdout == ""
+
+- name: Install itweb-base-image imagestream and build config
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/itweb-base-image.yaml -n {{ openshift_project_name }}"
+  when: image_check_result.stdout == ""
