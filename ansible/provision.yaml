@@ -7,7 +7,7 @@
 
   roles:
    - admin
-   - ci-cd
+#   - ci-cd
    - infrastructure
 #  - development
 #  - production
