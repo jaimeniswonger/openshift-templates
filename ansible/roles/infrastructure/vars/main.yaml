@@ -1,6 +1,6 @@
 ---
-openshift_project_name: itweb-develop
-openshift_project_display_name: 'ITWEB - Development'
-openshift_project_description: 'The ITWEB development environment'
-openshift_project_admin_user: h76
+openshift_project_name: itweb-infra
+openshift_project_display_name: 'ITWEB - Infrastructure'
+openshift_project_description: 'The namespace for ITWEB infrastructure applications and configuration'
+openshift_project_admin_user: admin
 autostart_pipeline: true
