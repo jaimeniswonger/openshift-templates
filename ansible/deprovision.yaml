@@ -8,7 +8,6 @@
   - include_role:
       name: infrastructure
       tasks_from: deprovision
-      include_vars: main.yaml      
       
 #  - include_role:
 #      name: production
