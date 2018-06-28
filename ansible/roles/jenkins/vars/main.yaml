@@ -1,4 +1,5 @@
 ---
+app_name: jenkins
 openshift_project_name: itweb-ci-cd
 git_url: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-jenkins
 git_branch: develop
