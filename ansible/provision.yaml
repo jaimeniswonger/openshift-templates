@@ -1,15 +1,6 @@
 ---
 - hosts: master_nodes
 
-#  vars_prompt:
-#    - name: "openshift_username"
-#      prompt: "Please provide an Openshift username with admin rights"
-#      private: no
-#      default: "admin"
-#    - name: "openshift_password"
-#      prompt: "Password"
-#      private: yes
-      
   pre_tasks:
   - include_tasks: shared/tasks/openshift-login.yaml
   - include_tasks: shared/tasks/pre-install.yaml

@@ -1,0 +1,17 @@
+---
+- hosts: master_nodes
+  
+  pre_tasks:
+  - include_tasks: shared/tasks/openshift-login.yaml
+    
+  tasks:
+  - include_role:
+      name: infrastructure
+      tasks_from: deprovision
+      include_vars: main.yaml      
+      
+#  - include_role:
+#      name: production
+#      tasks_from: deprovision
+#    vars:
+#      openshift_project_name: production
