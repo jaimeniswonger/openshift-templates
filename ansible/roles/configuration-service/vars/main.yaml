@@ -8,5 +8,5 @@ max_cpu: 900m
 min_memory: 1Gi
 max_memory: 2Gi
 route_host: configuration.awsos2.americancentury.com
-nexus_url: http://itweb-nexus3.itweb-ci-cd.svc:8081
+nexus_url: http://itweb-nexus.itweb-ci-cd.svc:8081
 openshift_ci_cd_project_name: itweb-ci-cd
