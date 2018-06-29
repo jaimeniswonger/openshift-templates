@@ -8,6 +8,9 @@
 - include_tasks: create-springboot-s2i-build.yaml
 - include_tasks: create-springboot-runtime-build.yaml
 
+- include_role:
+    name: configuration-service
+
 #- include_role:
 #    name: certificate-service
 #  vars:

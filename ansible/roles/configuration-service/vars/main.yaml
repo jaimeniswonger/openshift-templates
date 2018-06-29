@@ -1,0 +1,8 @@
+---
+configuration_repo_git_url: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-config
+min_cpu: 300m
+max_cpu: 900m
+min_memory: 1Gi
+max_memory: 2Gi
+route_host: configuration.awsos2.americancentury.com
+nexus_url: http://itweb-nexus3.itweb-ci-cd.svc:8081

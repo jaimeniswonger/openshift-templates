@@ -1,0 +1,218 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: configuration-service
+  annotations:
+    displayName: ITWEB - Spring Configuration Server
+    description: Spring Configuration Server
+    iconClass: icon-spring
+    tags: builder, spring-boot, spring-cloud, config
+objects:
+
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+    creationTimestamp: null
+  spec: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: {{ app_name }}-builder
+    labels:
+      app: {{ app_name }}
+    creationTimestamp: null
+  spec: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: openjdk
+  spec:
+    tags:
+    - from:
+        kind: DockerImage
+        name: openjdk:8-jre-alpine
+      name: 8-jre-alpine
+      referencePolicy:
+        type: Source
+
+# BUILD CONFIG - builder
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: {{ app_name }}-builder
+    labels:
+      app: {{ app_name }}
+  spec:
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: springboot-s2i:latest
+          namespace: {{ openshift_project_name }}
+        env:
+          - name: NEXUS_HOST
+            value: {{ nexus_url }}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: {{ app_name }}-builder:latest
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange 
+      imageChange: {}
+
+# BUILD CONFIG - runtime      
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: {{ app_name }}:latest
+    source:
+      type: Dockerfile
+      dockerfile: |
+        FROM itweb-springboot-runtime
+        COPY application.jar /
+        CMD ["sh", "/usr/local/bin/start-application.sh"]
+      images:
+      - from:
+          kind: ImageStreamTag
+          name: {{ app_name }}-builder:latest
+        paths:
+        - destinationDir: .
+          sourcePath: /opt/app-root/src/application.jar
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: 'itweb-springboot-runtime:latest'
+          namespace: {{ openshift_project_name }}
+
+# DEPLOYMENT CONFIG
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    strategy:
+      type: Rolling
+      rollingParams:
+        updatePeriodSeconds: 1
+        intervalSeconds: 1
+        timeoutSeconds: 600
+        maxUnavailable: 25%
+        maxSurge: 25%
+      resources: {}
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          containerNames:
+            - {{ app_name }}
+          from:
+            kind: ImageStreamTag
+            name: '{{ app_name }}:latest'
+    replicas: 1
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    template:
+      metadata:
+        labels:
+          app: {{ app_name }}
+          deploymentconfig: {{ app_name }}
+      spec:
+        containers:
+          - env:
+            - name: spring_cloud_config_server_git_uri
+              value: >-
+                {{ configuration_repo_git_url }}
+            - name: spring_cloud_config_server_git_privateKey
+              valueFrom:
+                secretKeyRef:
+                  key: ssh-privatekey
+                  name: git-private-key
+            name: {{ app_name }}
+            image: {{ app_name }}
+            ports:
+              - containerPort: 8888
+                protocol: TCP
+              - containerPort: 8081
+                protocol: TCP
+            resources: 
+              requests: 
+                cpu: {{ min_cpu }}
+                memory: {{ min_memory }}
+              limits:
+                cpu: {{ max_cpu }}
+                memory: {{ max_memory }}
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: 8081
+                scheme: HTTP
+              initialDelaySeconds: 45
+              timeoutSeconds: 2
+              periodSeconds: 15
+              successThreshold: 1
+              failureThreshold: 5
+            terminationMessagePath: /dev/termination-log
+            imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirst
+        securityContext: {}
+
+# SERVICE CONFIG
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    ports:
+      - name: 8888-tcp
+        protocol: TCP
+        port: 8888
+        targetPort: 8888
+      - name: 8081-tcp
+        protocol: TCP
+        port: 8081
+        targetPort: 8081
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    type: ClusterIP
+    sessionAffinity: None
+  status:
+    loadBalancer: {}
+
+# ROUTE CONFIG
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    host: {{ route_host }}
+    to:
+      kind: Service
+      name: {{ app_name }}
+    port:
+      targetPort: 8888-tcp
+    wildcardPolicy: None
