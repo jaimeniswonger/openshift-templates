@@ -1,0 +1,21 @@
+---
+- name: Check for existence of build and image labeled template=springboot-s2i
+  action: command oc get is -l template=springboot-s2i -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: image_check_result
+  
+#- debug: var=image_check_result
+
+- name: Create springboot-s2i imagestream and build config json from template
+  template:
+    src: "springboot-s2i-build.j2"
+    dest: "{{ mktemp.stdout }}/springboot-s2i-build.yaml"
+  changed_when: no
+  when: image_check_result.stdout == ""
+
+- name: Install springboot-s2i imagestream and build config
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/springboot-s2i-build.yaml -n {{ openshift_project_name }}"
+  when: image_check_result.stdout == ""
+
+- name: Start the springboot-s2i build
+  action: command bash -c "oc start-build springboot-s2i -n {{ openshift_project_name }}"
+  when: image_check_result.stdout == ""
