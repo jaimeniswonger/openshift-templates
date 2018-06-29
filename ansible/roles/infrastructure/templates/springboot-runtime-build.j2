@@ -1,0 +1,53 @@
+####                                              
+#### CREATES THE itweb-springboot-runtime IMAGE STREAM AND BUILD CONFIG
+####    - This is the base image for all spring boot builds
+####    - The Git repo is: {{ springboot_s2i_runtime_git_url }}
+####        * Currently, no automated builds are triggered from changes from this repository
+####
+apiVersion: v1
+kind: List
+items:
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: itweb-springboot-runtime
+    labels:
+      template: itweb-springboot-runtime
+  spec:
+    lookupPolicy:
+      local: false
+
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: itweb-springboot-runtime
+    labels:
+      template: itweb-springboot-runtime
+  spec:
+    strategy:
+      dockerStrategy:
+        from:
+          kind: DockerImage
+          name: 'openjdk:8-jre-alpine'
+      type: Docker
+    source:
+      git:
+        uri: {{ springboot_s2i_runtime_git_url }}
+      sourceSecret:
+        name: git-private-key
+      type: Dockerfile    
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'itweb-springboot-runtime:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers:
+      - imageChange: {}
+      - type: ConfigChange
+      - generic:
+          secret: itweb-springboot-runtime
+        type: Generic
