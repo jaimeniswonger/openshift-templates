@@ -8,5 +8,8 @@
 - include_role:
     name: jenkins
 
+- include_role:
+    name: nexus
+
 #- include_role:
 #    name: sonarqube

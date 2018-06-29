@@ -1,0 +1,166 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: {{ app_name }}
+objects:
+
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    lookupPolicy:
+      local: false
+
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    strategy:
+      dockerStrategy:
+      type: Docker
+    source:
+      type: Dockerfile
+      dockerfile: |
+        FROM {{ nexus_base_image }}
+        USER root
+        RUN yum update -y
+        USER 1001    
+    output:
+      to:
+        kind: ImageStreamTag
+        name: '{{ app_name }}:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers: {}
+
+# DEPLOYMENT CONFIG
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: {{ app_name }}
+          deploymentconfig: {{ app_name }}
+      spec:
+        containers:
+        - image: {{ app_name }}
+          imagePullPolicy: Always
+          livenessProbe:
+            exec:
+              command:
+              - echo
+              - ok
+            failureThreshold: 3
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: {{ app_name }}
+          ports:
+          - containerPort: 8081
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /repository/maven-public/
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /nexus-data
+            name: {{ app_name }}-data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: {{ app_name }}-data
+#        - name: {{ app_name }}-data
+#          persistentVolumeClaim:
+#            claimName: {{ app_name }}
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - {{ app_name }}
+        from:
+          kind: ImageStreamTag
+          name: {{ app_name }}:latest
+      type: ImageChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+
+# SERVICE
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    ports:
+    - name: 8081-tcp
+      port: 8081
+      protocol: TCP
+      targetPort: 8081
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+
+# PERSISTENT VOLUME CLAIM      
+#- apiVersion: v1
+#  kind: PersistentVolumeClaim
+#  metadata:
+#    name: {{ app_name }}
+#    labels:
+#      app: {{ app_name }}
+#  spec:
+#    accessModes:
+#    - ReadWriteOnce
+#    resources:
+#      requests:
+#        storage: 5Gi
