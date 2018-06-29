@@ -6,5 +6,5 @@
 #- debug: var=app_check_result
 
 - name: UnInstall the {{ app_name }} application 
-  action: command oc get all -l app={{ app_name }} -n {{ openshift_project_name }}
+  action: command oc delete all -l app={{ app_name }} -n {{ openshift_project_name }}
   when: app_check_result.stdout != ""
