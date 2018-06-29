@@ -1,0 +1,45 @@
+# SERVICE
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{app_name }}-db
+  labels:
+    app: {{ app_name }}
+    component: {{ app_name }}-db
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: {{ app_name }}-db
+  type: LoadBalancer
+---
+# DEPLOYMENT
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ app_name }}-db
+  labels:
+    app: {{ app_name }}
+    component: {{ app_name }}-db
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ app_name }}-db
+      name: {{ app_name }}-db
+    spec:
+      serviceAccount: {{ app_name }}-account
+      #imagePullSecrets:
+      #  - name: dockerhub
+      containers:
+      - name: {{ app_name }}-db
+        image: docker-registry.default.svc:5000/{{ openshift_project_name }}/aqua-db:3.2.rc5
+        securityContext:
+          privileged: true
+        env:
+          - name: POSTGRES_PASSWORD
+            value: {{ aqua_postgres_password }}
+          - name: ADMIN_PASSWORD
+            value: {{ aqua_admin_password }}
+        ports:
+        - containerPort: 5432

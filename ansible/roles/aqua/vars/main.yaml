@@ -1,0 +1,8 @@
+---
+openshift_project_name: aqua-security
+openshift_project_display_name: 'Aqua'
+openshift_project_description: 'Aqua Container Security'
+openshift_project_admin_user: admin
+app_name: aqua
+aqua_postgres_password: password
+aqua_admin_password: aquaTest123
