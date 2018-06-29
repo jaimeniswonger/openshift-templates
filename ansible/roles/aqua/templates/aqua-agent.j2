@@ -1,22 +1,22 @@
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: aqua-agent
-  namespace: aqua-security
+  name: {{ app_name }}-agent
 spec:
   template:
     metadata:
       labels:
-        app: aqua-agent
-      name: aqua-agent
+        app: {{ app_name }}
+        template: {{ app_name }}-agent
+      name: {{ app_name }}-agent
     spec:
-      serviceAccount: aqua-account
+      serviceAccount: {{ app_name }}-account
       hostPID: true
       #imagePullSecrets:
       #  - name: dockerhub
       containers:
-      - name: aqua-agent
-        image: docker-registry.default.svc:5000/aqua-security/aqua-agent:3.2.rc5
+      - name: {{ app_name }}-agent
+        image: docker-registry.default.svc:5000/{{ openshift_project_name }}/aqua-agent:3.2.rc5
         imagePullPolicy: Always
         securityContext:
           privileged: true
@@ -24,7 +24,7 @@ spec:
           - name: SCALOCK_TOKEN
             value: 388e483f-7f4f-4628-ba87-dc7be7ab4bcf
           - name: SCALOCK_SERVER
-            value: aqua-gateway.aqua-security.svc
+            value: {{ app_name }}-gateway.{{ openshift_project_name }}.svc
           - name: AQUA_LOGICAL_NAME
             value:
         volumeMounts:

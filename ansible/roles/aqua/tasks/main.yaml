@@ -8,4 +8,4 @@
 - include_tasks: install-aqua-db.yaml
 - include_tasks: install-aqua-web.yaml
 - include_tasks: install-aqua-gateway.yaml
-#- include_tasks: install-aqua-agent.yaml
+- include_tasks: install-aqua-agent.yaml
