@@ -1,17 +1,17 @@
 ---
-- name: Check for existence of application labeled app={{ app_name }} and component={{ app_name }}-database
-  action: command oc get all -l app={{ app_name }},component={{ app_name }}-database -o name --ignore-not-found -n {{ openshift_project_name }}
+- name: Check for existence of application labeled app={{ app_name }} and template={{ app_name }}-db
+  action: command oc get all -l app={{ app_name }},template={{ app_name }}-db -o name --ignore-not-found -n {{ openshift_project_name }}
   register: object_check_result
   
 #- debug: var=object_check_result
 
-- name: Create {{ app_name }}-database application json from template
+- name: Create {{ app_name }}-db application json from template
   template:
-    src: "{{ app_name }}-database.j2"
-    dest: "{{ mktemp.stdout }}/{{ app_name }}-database.yaml"
+    src: "{{ app_name }}-db.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-db.yaml"
   changed_when: no
   when: object_check_result.stdout == ""
 
-- name: Install {{ app_name }}-database
-  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-database.yaml -n {{ openshift_project_name }}"
+- name: Install {{ app_name }}-db
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-db.yaml -n {{ openshift_project_name }}"
   when: object_check_result.stdout == ""

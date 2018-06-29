@@ -5,7 +5,7 @@ metadata:
   name: {{app_name }}-db
   labels:
     app: {{ app_name }}
-    component: {{ app_name }}-db
+    template: {{ app_name }}-db
 spec:
   ports:
     - port: 5432
@@ -20,7 +20,7 @@ metadata:
   name: {{ app_name }}-db
   labels:
     app: {{ app_name }}
-    component: {{ app_name }}-db
+    template: {{ app_name }}-db
 spec:
   template:
     metadata:
