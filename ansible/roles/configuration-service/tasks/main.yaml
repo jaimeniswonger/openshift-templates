@@ -1,5 +1,7 @@
 ---
 - name: Include tasks for installing the {{ app_name }} application
   include_tasks: install-application.yaml
+- name: Include tasks for installing the {{ app_name }} pipeline
+  include_tasks: install-pipeline.yaml
 #- name: Start itweb-jenkins-base image build 
 #  include_tasks: start-build.yaml
