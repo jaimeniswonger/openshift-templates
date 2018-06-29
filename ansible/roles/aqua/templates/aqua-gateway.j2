@@ -1,9 +1,11 @@
+# SERVICE
 apiVersion: v1
 kind: Service
 metadata:
-  name: aqua-gateway
+  name: {{ app_name }}-gateway
   labels:
-    app: aqua-gateway
+    app: {{ app_name }}
+    template: {{ app_name }}-gateway
 spec:
   ports:
     - nodePort: 30036
@@ -11,31 +13,33 @@ spec:
       protocol: TCP
       targetPort: 3622
   selector:
-    app: aqua-gateway
+    app: {{ app_name }}-gateway
   type: LoadBalancer
 ---
+# DEPLOYMENT
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: aqua-gateway
+  name: {{ app_name }}-gateway
 spec:
   template:
     metadata:
       labels:
-        app: aqua-gateway
-      name: aqua-gateway
+        app: {{ app_name }}
+        template: {{ app_name }}-gateway
+      name: {{ app_name }}-gateway
     spec:
-      serviceAccount: aqua-account
+      serviceAccount: {{ app_name }}-account
       #imagePullSecrets:
       #  - name: dockerhub
       containers:
-      - name: aqua-gateway
-        image: docker-registry.default.svc:5000/aqua-security/aqua-gateway:3.2.rc5
+      - name: {{ app_name }}-gateway
+        image: docker-registry.default.svc:5000/{{ openshift_project_name }}/aqua-gateway:3.2.rc5
         securityContext:
           privileged: true
         env:
           - name: SCALOCK_GATEWAY_PUBLIC_IP
-            value: aqua.awsos.americancentury.com
+            value: {{ route_host }}
           - name: SCALOCK_DBUSER
             value: "postgres"
           - name: SCALOCK_DBPASSWORD
@@ -43,7 +47,7 @@ spec:
           - name: SCALOCK_DBNAME
             value: "scalock"
           - name: SCALOCK_DBHOST
-            value: aqua-db.aqua-security.svc
+            value: {{ app_name }}-db.{{ openshift_project_name }}.svc
           - name: SCALOCK_DBPORT
             value: "5432"
           - name: SCALOCK_AUDIT_DBUSER
@@ -53,7 +57,7 @@ spec:
           - name: SCALOCK_AUDIT_DBNAME
             value: "slk_audit"
           - name: SCALOCK_AUDIT_DBHOST
-            value: aqua-db.aqua-security.svc
+            value: {{ app_name }}-db.{{ openshift_project_name }}.svc
           - name: SCALOCK_AUDIT_DBPORT
             value: "5432"
         volumeMounts:

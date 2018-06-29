@@ -6,3 +6,4 @@ openshift_project_admin_user: admin
 app_name: aqua
 aqua_postgres_password: password
 aqua_admin_password: aquaTest123
+route_host: aqua.awsos2.americancentury.com
