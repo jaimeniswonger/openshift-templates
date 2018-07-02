@@ -1,3 +1,3 @@
 ---
-- name: Include tasks for uninstalling the {{ app_name }} application
-  include_tasks: uninstall-application.yaml
+- include_tasks: uninstall-application.yaml
+- include_tasks: uninstall-pipeline.yaml
