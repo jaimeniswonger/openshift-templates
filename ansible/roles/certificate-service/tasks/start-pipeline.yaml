@@ -4,5 +4,5 @@
   register: pipeline_already_run_result
   
 - name: Start {{ app_name }} build pipeline 
-  action: command oc start-build {{ app_name }} -n {{ openshift_ci_cd_project_name }}
+  action: command oc start-build {{ app_name }}-pipeline -n {{ openshift_ci_cd_project_name }}
   when: pipeline_already_run_result.stdout == ""
