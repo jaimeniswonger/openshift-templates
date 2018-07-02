@@ -22,8 +22,9 @@ metadata:
     template: {{ app_name }}-web
 spec:
   ports:
-    - nodePort: 80
-      port: 8080
+    - name: web
+      nodePort: 0
+      port: 80
       protocol: TCP
       targetPort: 8080
   selector:
