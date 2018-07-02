@@ -21,12 +21,14 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: {{ app_name }}-gateway
+  labels:
+    app: {{ app_name }}
+    template: {{ app_name }}-gateway
 spec:
   template:
     metadata:
       labels:
-        app: {{ app_name }}
-        template: {{ app_name }}-gateway
+        app: {{ app_name }}-gateway
       name: {{ app_name }}-gateway
     spec:
       serviceAccount: {{ app_name }}-account
