@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: {{ app_name }}
+metadata:
+  annotations:
+    description: A Mock Authentication Service used by ITWEB
+    iconClass: icon-sso
+    openshift.io/display-name: Mock Auth-N
+    tags: itweb,nodejs
+  name: {{ app_name }}
+objects:
+
+# IMAGE STREAM    
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    generation: 1
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    lookupPolicy:
+      local: false
+    tags:
+    - annotations: null
+      generation: null
+      importPolicy: {}
+      name: latest
+      referencePolicy:
+        type: ""
+  status:
+    dockerImageRepository: ""
+
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: {{ app_name }}:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        uri: {{ git_url }}
+        ref: {{ git_ref }}
+      sourceSecret:
+        name: git-private-key
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: nodejs:4
+          namespace: openshift
+      type: Source
+    triggers:
+    - imageChange: {}
+      type: ImageChange
+    - type: ConfigChange
+  status:
+    lastVersion: 0
+
+# DEPLOYMENT CONFIG    
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    replicas: 1
+    selector:
+      app: {{ app_name }}
+      deploymentconfig: {{ app_name }}
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: {{ app_name }}
+          deploymentconfig: {{ app_name }}
+      spec:
+        containers:
+        - image: {{ app_name }}:latest
+          imagePullPolicy: Always
+          name: {{ app_name }}
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8081
+            protocol: TCP
+          resources:
+            limits:
+              cpu: {{ cpu_limit }}
+              memory: {{ memory_limit }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - {{ app_name }}
+        from:
+          kind: ImageStreamTag
+          name: {{ app_name }}:latest
+      type: ImageChange
+    - type: ConfigChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+
+# SERVICE    
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: {{ app_name }}
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+
+# ROUTE
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: {{ app_name }}
+    name: {{ app_name }}
+  spec:
+    host: {{ route_host }}
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: {{ app_name }}
+      weight: 100
+    wildcardPolicy: None

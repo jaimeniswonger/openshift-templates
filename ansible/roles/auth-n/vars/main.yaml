@@ -1,0 +1,8 @@
+---
+app_name: mock-auth-n
+git_url: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-auth-n
+git_branch: develop
+git_secret: git-private-key
+route_host: auth-n.awsos2.americancentury.com
+cpu_limit: 900m
+memory_limit: 1Gi
