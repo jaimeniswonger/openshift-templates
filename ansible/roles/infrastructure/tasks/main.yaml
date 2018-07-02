@@ -11,6 +11,9 @@
 - include_role:
     name: configuration-service
 
+- include_role:
+    name: auth-n
+
 #- include_role:
 #    name: certificate-service
 #  vars:
