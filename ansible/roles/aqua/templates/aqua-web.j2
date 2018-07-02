@@ -1,3 +1,19 @@
+# SERVICE
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ app_name }}-web
+  labels:
+    app: {{ app_name }}
+    template: {{ app_name }}-web
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: {{ app_name }}-web
+  type: LoadBalancer
+
+---
 # ROUTE
 apiVersion: v1
 kind: Route
@@ -11,25 +27,7 @@ spec:
   to:
     kind: Service
     name: {{ app_name }}-web
----
-# SERVICE
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ app_name }}-web
-  labels:
-    app: {{ app_name }}
-    template: {{ app_name }}-web
-spec:
-  ports:
-    - name: web
-      nodePort: 0
-      port: 80
-      protocol: TCP
-      targetPort: 8080
-  selector:
-    app: {{ app_name }}-web
-  type: LoadBalancer
+
 ---
 # DEPLOYMENT
 apiVersion: extensions/v1beta1
