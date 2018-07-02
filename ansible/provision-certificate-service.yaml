@@ -1,0 +1,12 @@
+---
+- hosts: master_nodes
+
+  pre_tasks:
+  - include_tasks: shared/tasks/openshift/openshift-login.yaml
+  - include_tasks: shared/tasks/pre-install.yaml
+
+  roles:
+   - certificate-service
+
+  post_tasks:
+  - include_tasks: shared/tasks/post-install.yaml

@@ -1,0 +1,4 @@
+---
+- include_tasks: install-application.yaml
+- include_tasks: install-pipeline.yaml
+- include_tasks: start-pipeline.yaml
