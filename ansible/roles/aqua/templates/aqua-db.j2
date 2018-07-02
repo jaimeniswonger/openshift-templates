@@ -33,8 +33,7 @@ spec:
         - name: dockerhub
       containers:
       - name: {{ app_name }}-db
-#        image: docker-registry.default.svc:5000/{{ openshift_project_name }}/aqua-db:3.2.rc5
-        image: docker.io/aquasec/database:3.0
+        image: {{ aqua_db_image }}
         securityContext:
           privileged: true
         env:

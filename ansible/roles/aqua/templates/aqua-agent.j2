@@ -12,11 +12,11 @@ spec:
     spec:
       serviceAccount: {{ app_name }}-account
       hostPID: true
-      #imagePullSecrets:
-      #  - name: dockerhub
+      imagePullSecrets:
+        - name: dockerhub
       containers:
       - name: {{ app_name }}-agent
-        image: docker-registry.default.svc:5000/{{ openshift_project_name }}/aqua-agent:3.2.rc5
+        image: {{ aqua_agent_image }}
         imagePullPolicy: Always
         securityContext:
           privileged: true

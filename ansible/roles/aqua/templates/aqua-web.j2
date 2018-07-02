@@ -47,11 +47,11 @@ spec:
       name: {{ app_name }}-web
     spec:
       serviceAccount: {{ app_name }}-account
-      #imagePullSecrets:
-      #  - name: dockerhub
+      imagePullSecrets:
+        - name: dockerhub
       containers:
       - name: {{ app_name }}-web
-        image: docker-registry.default.svc:5000/{{ openshift_project_name }}/aqua-server:3.2.rc5
+        image: {{ aqua_web_image }}
         securityContext:
           privileged: true
         env:

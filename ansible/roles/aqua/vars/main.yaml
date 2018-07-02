@@ -7,3 +7,7 @@ app_name: aqua
 aqua_postgres_password: password
 aqua_admin_password: aquaTest123
 route_host: aqua.awsos2.americancentury.com
+aqua_db_image: docker.io/aquasec/database:3.2.rc5
+aqua_web_image: docker.io/aquasec/server:3.2.rc5
+aqua_gateway_image: docker.io/aquasec/gateway:3.2.rc5
+aqua_agent_image: docker.io/aquasec/agent:3.2.rc5

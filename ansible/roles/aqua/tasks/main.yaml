@@ -5,7 +5,8 @@
 - include_tasks: ../../../shared/tasks/openshift/create-openshift-project.yaml
 
 - include_tasks: create-serviceaccount.yaml
+- include_tasks: create-dockerhub-secret.yaml
 - include_tasks: install-aqua-db.yaml
-#- include_tasks: install-aqua-web.yaml
-#- include_tasks: install-aqua-gateway.yaml
-#- include_tasks: install-aqua-agent.yaml
+- include_tasks: install-aqua-web.yaml
+- include_tasks: install-aqua-gateway.yaml
+- include_tasks: install-aqua-agent.yaml
