@@ -1,0 +1,17 @@
+---
+- name: Check for existence of image stream named {{ image_stream_name }} in {{ openshift_project_name }}
+  action: command oc get is {{ image_stream_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: image_stream_check_result
+  
+#- debug: var=image_stream_check_result
+
+- name: Create image stream json for image stream named {{ image_stream_name }}
+  template:
+    src: "../../shared/templates/image-stream.j2"
+    dest: "{{ mktemp.stdout }}/{{ image_stream_name }}-image-stream.yaml"
+  changed_when: no
+  when: image_stream_check_result.stdout == ""
+
+- name: Create image stream named {{ image_stream_name }}
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ image_stream_name }}-image-stream.yaml -n {{ openshift_project_name }}"
+  when: image_stream_check_result.stdout == ""
