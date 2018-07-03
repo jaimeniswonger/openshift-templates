@@ -2,11 +2,12 @@
 - include_vars:
     file: main.yaml
 
-- include_tasks: ../../../shared/tasks/openshift/create-openshift-project.yaml
-- include_tasks: ../../../shared/tasks/openshift/create-git-private-key.yaml
+- include_tasks: shared/tasks/openshift/create-openshift-project.yaml
+- include_tasks: shared/tasks/openshift/create-git-private-key.yaml
 - include_tasks: create-rolebindings.yaml
 - include_tasks: create-springboot-s2i-build.yaml
 - include_tasks: create-springboot-runtime-build.yaml
+- include_tasks: shared/tasks/openshift/create-bootstrap-config.yaml
 
 - include_role:
     name: configuration-service
