@@ -1,6 +1,6 @@
 ---
 - set_fact:
-    image_stream_name: {{ app_name }}
+    image_stream_name: "{{ app_name }}"
 - include_tasks: ../../../shared/tasks/openshift/create-image_stream.yaml
 
 - set_fact:
