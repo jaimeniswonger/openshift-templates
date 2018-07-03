@@ -1,0 +1,22 @@
+---
+# IMAGE STREAM -- runtime
+- set_fact:
+    image_stream_name: "{{ app_name }}"
+- include_tasks: shared/tasks/openshift/create-image-stream.yaml
+
+# IMAGE STREAM -- builder
+- set_fact:
+    image_stream_name: "{{ app_name }}-builder"
+- include_tasks: shared/tasks/openshift/create-image-stream.yaml
+
+# BUILD CONFIG -- runtime
+- include_tasks: shared/tasks/openshift/create-springboot-runtime-build-config.yaml
+
+# BUILD CONFIG -- builder
+- include_tasks: shared/tasks/openshift/create-springboot-builder-build-config.yaml
+
+# DEPLOYMENT CONFIG
+- include_tasks: shared/tasks/openshift/create-springboot-deployment-config.yaml
+
+# SERVICE
+- include_tasks: shared/tasks/openshift/create-springboot-service.yaml

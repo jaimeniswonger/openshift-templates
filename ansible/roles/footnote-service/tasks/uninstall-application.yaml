@@ -1,0 +1,5 @@
+---
+- set_fact:
+    label: "{{ app_name }}"
+
+- include_tasks: shared/tasks/openshift/delete-by-label.yaml
