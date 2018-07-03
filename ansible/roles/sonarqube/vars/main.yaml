@@ -1,0 +1,11 @@
+---
+app_name: itweb-sonarqube
+sonarqube_base_image: owasp/sonarqube:latest
+route_host: sonarqube.awsos2.americancentury.com
+volume_capacity: 1Gi
+cpu_limit: 1000m
+memory_limit: 2Gi
+sonarqube_postgres_username: sonar
+sonarqube_postgres_password: changeme
+sonarqube_postgres_image_tag: postgresql:9.5
+

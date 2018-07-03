@@ -1,0 +1,10 @@
+---
+- hosts: master_nodes
+
+  pre_tasks:
+  - include_tasks: shared/tasks/openshift/openshift-login.yaml
+
+  tasks:
+  - include_role:
+      name: sonarqube
+      tasks_from: deprovision
