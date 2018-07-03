@@ -1,17 +1,17 @@
 ---
-- name: Check for existence of a build config named {{ app_name }} in {{ openshift_project_name }}
-  action: command oc get bc {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+- name: Check for existence of a build config named {{ app_name }}-builder in {{ openshift_project_name }}
+  action: command oc get bc {{ app_name }}-builder -o name --ignore-not-found -n {{ openshift_project_name }}
   register: object_check_result
   
 #- debug: var=object_check_result
 
-- name: Create build config json  named {{ app_name }}
+- name: Create build config json  named {{ app_name }}-builder
   template:
-    src: "../../shared/templates/springboot-runtime-build-config.j2"
-    dest: "{{ mktemp.stdout }}/{{ app_name }}-springboot-runtime-build-config.yaml"
+    src: "../../shared/templates/springboot-builder-build-config.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-springboot-builder-build-config.yaml"
   changed_when: no
   when: object_check_result.stdout == ""
 
-- name: Create build config named {{ app_name }}
-  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-springboot-runtime-build-config.yaml -n {{ openshift_project_name }}"
+- name: Create build config named {{ app_name }}-builder
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-springboot-builder-build-config.yaml -n {{ openshift_project_name }}"
   when: object_check_result.stdout == ""

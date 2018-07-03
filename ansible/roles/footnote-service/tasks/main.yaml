@@ -9,6 +9,8 @@
 
 - include_tasks: shared/tasks/openshift/create-springboot-runtime-build-config.yaml
 
+- include_tasks: shared/tasks/openshift/create-springboot-builder-build-config.yaml
+
 #- include_tasks: install-application.yaml
 #- include_tasks: install-pipeline.yaml
 #- include_tasks: start-pipeline.yaml
