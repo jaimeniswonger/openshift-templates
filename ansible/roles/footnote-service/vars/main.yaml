@@ -9,3 +9,4 @@ max_memory: 2Gi
 route_host: footnote.awsos2.americancentury.com
 nexus_url: http://itweb-nexus.itweb-ci-cd.svc:8081
 openshift_ci_cd_project_name: itweb-ci-cd
+openshift_infrastructure_project_name: itweb-infra

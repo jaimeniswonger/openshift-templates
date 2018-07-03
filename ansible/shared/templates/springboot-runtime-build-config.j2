@@ -1,0 +1,33 @@
+kind: BuildConfig
+apiVersion: v1
+metadata:
+  name: {{ app_name }}
+  labels:
+    app: {{ app_name }}
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ app_name }}:latest
+  source:
+    type: Dockerfile
+    dockerfile: |
+      FROM itweb-springboot-runtime:latest
+      COPY application.jar /
+      RUN mkdir /certs
+      RUN chmod a+rw /certs
+      CMD ["sh", "/usr/local/bin/startup.sh"]
+    images:
+    - from:
+        kind: ImageStreamTag
+        name: {{ app_name }}-builder:latest
+      paths:
+      - destinationDir: .
+        sourcePath: /opt/app-root/src/application.jar
+  strategy:
+    type: Docker
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: 'itweb-springboot-runtime:latest'
+        namespace: {{ openshift_infrastructure_project_name }}

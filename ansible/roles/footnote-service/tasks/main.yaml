@@ -7,6 +7,8 @@
     image_stream_name: "{{ app_name }}-builder"
 - include_tasks: shared/tasks/openshift/create-image-stream.yaml
 
+- include_tasks: shared/tasks/openshift/create-springboot-runtime-build-config.yaml
+
 #- include_tasks: install-application.yaml
 #- include_tasks: install-pipeline.yaml
 #- include_tasks: start-pipeline.yaml
