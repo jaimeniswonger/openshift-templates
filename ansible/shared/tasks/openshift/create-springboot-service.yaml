@@ -1,0 +1,17 @@
+---
+- name: Check for existence of a service named {{ app_name }} in {{ openshift_project_name }}
+  action: command oc get svc {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: object_check_result
+  
+#- debug: var=object_check_result
+
+- name: Create service json named {{ app_name }}
+  template:
+    src: "../../shared/templates/springboot-service.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-springboot-service.yaml"
+  changed_when: no
+  when: object_check_result.stdout == ""
+
+- name: Create service named {{ app_name }}
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-springboot-service.yaml -n {{ openshift_project_name }}"
+  when: object_check_result.stdout == ""
