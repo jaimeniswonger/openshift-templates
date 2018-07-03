@@ -127,6 +127,8 @@ objects:
          && chmod -R 777 $SONARQUBE_HOME \
          && chown -R sonarqube:sonarqube $SONARQUBE_HOME
          
+         USER sonarqube
+         
          ENTRYPOINT ["./bin/run.sh"]
     strategy:
       type: Docker
