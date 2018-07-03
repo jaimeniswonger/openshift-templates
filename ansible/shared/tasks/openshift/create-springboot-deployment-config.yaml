@@ -1,0 +1,17 @@
+---
+- name: Check for existence of a deployment config named {{ app_name }} in {{ openshift_project_name }}
+  action: command oc get dc {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: object_check_result
+  
+#- debug: var=object_check_result
+
+- name: Create deployment config json  named {{ app_name }}
+  template:
+    src: "../../shared/templates/springboot-deployment-config.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-springboot-deployment-config.yaml"
+  changed_when: no
+  when: object_check_result.stdout == ""
+
+- name: Create deployment config named {{ app_name }}
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-springboot-deployment-config.yaml -n {{ openshift_project_name }}"
+  when: object_check_result.stdout == ""
