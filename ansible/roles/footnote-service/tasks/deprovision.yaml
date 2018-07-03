@@ -1,6 +1,4 @@
 ---
-- set_fact:
-    label: "app={{ app_name }}"
 - include_tasks: uninstall-application.yaml
 
 #- include_tasks: uninstall-pipeline.yaml
