@@ -13,5 +13,5 @@
   when: object_check_result.stdout == ""
 
 - name: Create build config named {{ app_name }}
-  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-springboot-runtime-image-stream.yaml -n {{ openshift_project_name }}"
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-springboot-runtime-build-config.yaml -n {{ openshift_project_name }}"
   when: object_check_result.stdout == ""
