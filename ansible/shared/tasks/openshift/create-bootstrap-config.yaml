@@ -1,17 +1,17 @@
 ---
-- name: Check for existence of image stream named {{ image_stream_name }} in {{ openshift_project_name }}
-  action: command oc get is {{ image_stream_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
-  register: image_stream_check_result
+- name: Check for existence of a config map named bootstrap-config in {{ openshift_project_name }}
+  action: command oc get cm bootstrap-config -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: object_check_result
   
-#- debug: var=image_stream_check_result
+#- debug: var=object_check_result
 
-- name: Create image stream json for image stream named {{ image_stream_name }}
+- name: Create config map named bootstrap-config
   template:
-    src: "../../shared/templates/image-stream.j2"
-    dest: "{{ mktemp.stdout }}/{{ image_stream_name }}-image-stream.yaml"
+    src: "../../shared/templates/bootstrap-configmap.j2"
+    dest: "{{ mktemp.stdout }}/bootstrap-config.yaml"
   changed_when: no
-  when: image_stream_check_result.stdout == ""
+  when: object_check_result.stdout == ""
 
-- name: Create image stream named {{ image_stream_name }}
-  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ image_stream_name }}-image-stream.yaml -n {{ openshift_project_name }}"
-  when: image_stream_check_result.stdout == ""
+- name: Create config map named bootstrap-config
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/bootstrap-config.yaml -n {{ openshift_project_name }}"
+  when: object_check_result.stdout == ""
