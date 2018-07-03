@@ -9,7 +9,7 @@
 
 - name: Generate git-private-key secret yaml from template
   template:
-    src: "../../shared/templates/git-private-key.j2"
+    src: "shared/templates/git-private-key.j2"
     dest: "{{ mktemp.stdout }}/git-private-key.yaml"
   changed_when: no
   when: secret_check_result.stdout == ""

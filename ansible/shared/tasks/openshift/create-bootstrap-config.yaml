@@ -7,7 +7,7 @@
 
 - name: Create config map named bootstrap-config
   template:
-    src: "../../shared/templates/bootstrap-configmap.j2"
+    src: "shared/templates/bootstrap-configmap.j2"
     dest: "{{ mktemp.stdout }}/bootstrap-config.yaml"
   changed_when: no
   when: object_check_result.stdout == ""
