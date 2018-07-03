@@ -6,4 +6,5 @@
 - include_tasks: shared/tasks/openshift/create-git-private-key.yaml
 - include_tasks: shared/tasks/openshift/create-bootstrap-config.yaml
 
-- include_role: footnote-service
+- include_role:
+    name: footnote-service
