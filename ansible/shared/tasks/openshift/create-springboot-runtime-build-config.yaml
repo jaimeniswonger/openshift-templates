@@ -1,6 +1,6 @@
 ---
 - name: Check for existence of a build config named {{ app_name }} in {{ openshift_project_name }}
-  action: command oc get is {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  action: command oc get bc {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
   register: object_check_result
   
 #- debug: var=object_check_result
