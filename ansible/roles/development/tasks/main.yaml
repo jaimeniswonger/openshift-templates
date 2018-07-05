@@ -36,7 +36,7 @@
   include_role:
     name: springboot-application
   vars:
-    app_name: userpreference-service
+    app_name: watchlist-service
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-watchlist-service
     git_ref: develop
     route_host: watchlist.awsos2.americancentury.com
