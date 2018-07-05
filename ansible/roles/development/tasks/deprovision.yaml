@@ -26,6 +26,13 @@
   vars:
     app_name: watchlist-service
 
+- name: Delete edge application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: edge
+
 - include_role:
     name: common
     tasks_from: deprovision
