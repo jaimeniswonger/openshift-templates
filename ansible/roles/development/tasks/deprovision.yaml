@@ -33,6 +33,4 @@
   vars:
     app_name: edge
 
-- include_role:
-    name: common
-    tasks_from: deprovision
+- include_tasks: shared/tasks/openshift/delete-openshift-project.yaml
