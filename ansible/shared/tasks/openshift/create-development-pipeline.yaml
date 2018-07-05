@@ -1,6 +1,6 @@
 ---
-- name: Check for existence of pipeline labeled app={{ app_name }} and env={{ environment }}
-  action: command oc get all -l app={{ app_name }}, env={{ environment }} -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}
+- name: Check for existence of pipeline named {{ app_name }}-{{ environment }}-pipeline
+  action: command oc get bc {{ app_name }}-{{ environment }}-pipeline -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}
   register: pipeline_check_result
   
 #- debug: var=pipeline_check_result
