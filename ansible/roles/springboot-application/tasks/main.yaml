@@ -2,3 +2,4 @@
 - include_tasks: shared/tasks/openshift/create-springboot-application.yaml
 - include_tasks: shared/tasks/openshift/create-pipeline.yaml
 - include_tasks: shared/tasks/openshift/start-pipeline.yaml
+  when: autostart_pipeline
