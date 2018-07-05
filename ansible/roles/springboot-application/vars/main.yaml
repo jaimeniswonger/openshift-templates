@@ -1,0 +1,8 @@
+---
+min_cpu: 300m
+max_cpu: 900m
+min_memory: 1Gi
+max_memory: 2Gi
+nexus_url: http://itweb-nexus.itweb-ci-cd.svc:8081
+openshift_ci_cd_project_name: itweb-ci-cd
+openshift_infrastructure_project_name: itweb-infra

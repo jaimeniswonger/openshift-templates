@@ -4,4 +4,4 @@ openshift_project_name: itweb-development
 openshift_project_display_name: 'ITWEB - Development'
 openshift_project_description: 'The development namespace for ITWEB applications'
 openshift_project_admin_user: h76
-autostart_pipeline: true
+autostart_pipeline: false
