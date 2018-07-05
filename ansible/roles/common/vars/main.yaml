@@ -1,6 +1,0 @@
----
-#openshift_ci_cd_project_name: itweb-ci-cd
-
-#spring_cloud_config_uri: http://configuration-server.infrastructure.svc:8080
-
-#git_private_key: "{{ lookup('file', '~/.ssh/oc_id_rsa') }}"

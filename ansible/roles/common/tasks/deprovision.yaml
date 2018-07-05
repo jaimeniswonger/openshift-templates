@@ -1,5 +1,0 @@
-- name: Include variables
-  include_vars: main.yaml
-      
-- include_tasks: shared/tasks/openshift/delete-openshift-project.yaml
-#- include_tasks: delete-rolebindings.yaml

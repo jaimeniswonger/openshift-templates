@@ -1,3 +1,0 @@
----
-#- name: Remove system:image-puller role from system:serviceaccounts:{{ openshift_project_name }}
-#  action: command oc adm policy remove-role-from-group system:image-puller system:serviceaccounts:{{ openshift_project_name }} --role-namespace=infrastructure --rolebinding-name=infrastructure:image-pullers
