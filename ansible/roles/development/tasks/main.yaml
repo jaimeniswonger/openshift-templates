@@ -9,7 +9,7 @@
 #    name: footnote-service
 #
 - include_role:
-    name: fund-service
+   name: fund-service
 #
 #- include_role:
 #    name: userpreference-service
