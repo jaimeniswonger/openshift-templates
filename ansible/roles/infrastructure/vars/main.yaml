@@ -2,8 +2,6 @@
 openshift_project_name: itweb-infra
 openshift_project_display_name: 'ITWEB - Infrastructure'
 openshift_project_description: 'The namespace for ITWEB infrastructure applications and configuration'
-#openshift_project_admin_user: admin
-autostart_pipeline: true
 openshift_ci_cd_project_name: itweb-ci-cd
 springboot_s2i_git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/springboot-s2i
 springboot_s2i_runtime_git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-docker-springboot-runtime
