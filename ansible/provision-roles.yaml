@@ -6,7 +6,7 @@
   - include_tasks: shared/tasks/pre-install.yaml
 
   roles:
-   {{ roles_array }}
+    "{{ roles_array }}"
 
   post_tasks:
   - include_tasks: shared/tasks/post-install.yaml
