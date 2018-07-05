@@ -1,10 +1,30 @@
-- name: Delete edge application
+- name: Delete footnote-service application
   include_role:
     name: springboot-application
     tasks_from: deprovision
   vars:
-    app_name: edge
-    itweb_environment: development
+    app_name: footnote-service
+
+- name: Delete fund-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: fund-service
+
+- name: Delete userpreference-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: userpreference-service
+
+- name: Delete watchlist-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: watchlist-service
 
 - include_role:
     name: common

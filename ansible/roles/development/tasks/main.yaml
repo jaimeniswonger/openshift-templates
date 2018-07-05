@@ -5,17 +5,41 @@
 - include_tasks: shared/tasks/openshift/create-openshift-project.yaml
 - include_tasks: shared/tasks/openshift/create-bootstrap-config.yaml
 
-#- include_role:
-#    name: footnote-service
-#
-#- include_role:
-#    name: fund-service
-#
-#- include_role:
-#    name: userpreference-service
-#
-#- include_role:
-#    name: watchlist-service
+- name: Create footnote-service application
+  include_role:
+    name: springboot-application
+  vars:
+    app_name: footnote-service
+    git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-footnote-service
+    git_ref: develop
+    route_host: footnote.awsos2.americancentury.com
+    
+- name: Create fund-service application
+  include_role:
+    name: springboot-application
+  vars:
+    app_name: fund-service
+    git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-fund-service
+    git_ref: develop
+    route_host: fund.awsos2.americancentury.com
+    
+- name: Create userpreference-service application
+  include_role:
+    name: springboot-application
+  vars:
+    app_name: userpreference-service
+    git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-userpreference-service
+    git_ref: develop
+    route_host: userpreference.awsos2.americancentury.com
+
+- name: Create watchlist-service application
+  include_role:
+    name: springboot-application
+  vars:
+    app_name: userpreference-service
+    git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-watchlist-service
+    git_ref: develop
+    route_host: watchlist.awsos2.americancentury.com
 
 - name: Create edge application
   include_role:
@@ -25,4 +49,3 @@
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-edge
     git_ref: develop
     route_host: edge.awsos2.americancentury.com
-    itweb_environment: development
