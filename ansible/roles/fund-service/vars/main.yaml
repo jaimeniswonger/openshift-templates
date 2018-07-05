@@ -1,0 +1,12 @@
+---
+app_name: fund-service
+git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-fund-service
+git_ref: develop
+min_cpu: 300m
+max_cpu: 900m
+min_memory: 1Gi
+max_memory: 2Gi
+route_host: fund.awsos2.americancentury.com
+nexus_url: http://itweb-nexus.itweb-ci-cd.svc:8081
+openshift_ci_cd_project_name: itweb-ci-cd
+openshift_infrastructure_project_name: itweb-infra

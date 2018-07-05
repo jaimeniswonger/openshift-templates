@@ -1,0 +1,3 @@
+---
+- include_tasks: shared/tasks/openshift/delete-springboot-application.yaml
+- include_tasks: shared/tasks/openshift/delete-pipeline.yaml
