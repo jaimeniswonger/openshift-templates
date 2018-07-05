@@ -1,6 +1,14 @@
 - include_role:
+    name: configuration-service
+    tasks_from: deprovision
+
+- name: Delete certificate-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: certificate-service
+
+- include_role:
     name: common
     tasks_from: deprovision
-#- include_role:
-#    name: certificate-service
-#    tasks_from: deprovision
