@@ -1,3 +1,3 @@
 ---
 - name: Uninstall {{ app_name }}-pipeline 
-  action: command oc delete bc {{ app_name }}-{{ environment }}-pipeline -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}  
+  action: command oc delete bc {{ app_name }}-{{ itweb_environment }}-pipeline -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}  

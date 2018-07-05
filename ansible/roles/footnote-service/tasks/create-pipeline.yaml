@@ -1,3 +1,3 @@
 ---
 # PIPELINE
-- include_tasks: shared/tasks/openshift/create-{{ environment }}-pipeline.yaml
+- include_tasks: shared/tasks/openshift/create-{{ itweb_environment }}-pipeline.yaml

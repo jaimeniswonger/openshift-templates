@@ -11,10 +11,10 @@ objects:
 - apiVersion: v1
   kind: BuildConfig
   metadata:
-    name: {{ app_name }}-{{ environment }}-pipeline
+    name: {{ app_name }}-{{ itweb_environment }}-pipeline
     labels:
       app: {{ app_name }}
-      env: {{ environment }}
+      env: {{ itweb_environment }}
   spec:
     runPolicy: Serial
     strategy:

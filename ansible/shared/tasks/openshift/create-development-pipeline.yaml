@@ -1,17 +1,17 @@
 ---
-- name: Check for existence of pipeline named {{ app_name }}-{{ environment }}-pipeline
-  action: command oc get bc {{ app_name }}-{{ environment }}-pipeline -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}
+- name: Check for existence of pipeline named {{ app_name }}-{{ itweb_environment }}-pipeline
+  action: command oc get bc {{ app_name }}-{{ itweb_environment }}-pipeline -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}
   register: pipeline_check_result
   
 #- debug: var=pipeline_check_result
 
 - name: Create {{ app_name }}-{{ openshift_project_name }}-pipeline json from template
   template:
-    src: "shared/templates/springboot-{{ environment }}-pipeline.j2"
-    dest: "{{ mktemp.stdout }}/{{ app_name }}-{{ openshift_project_name }}-pipeline.yaml"
+    src: "shared/templates/springboot-{{ itweb_environment }}-pipeline.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-{{ itweb_environment }}-pipeline.yaml"
   changed_when: no
   when: pipeline_check_result.stdout == ""
 
 - name: Install {{ app_name }}-{{ openshift_project_name }}-pipeline 
-  action: command bash -c "oc process -f {{ mktemp.stdout }}/{{ app_name }}-{{ openshift_project_name }}-pipeline.yaml | oc create -f - -n {{ openshift_ci_cd_project_name }}"
+  action: command bash -c "oc process -f {{ mktemp.stdout }}/{{ app_name }}-{{ itweb_environment }}-pipeline.yaml | oc create -f - -n {{ openshift_ci_cd_project_name }}"
   when: pipeline_check_result.stdout == ""
