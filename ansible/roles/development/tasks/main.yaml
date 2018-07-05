@@ -13,7 +13,7 @@
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-footnote-service
     git_ref: develop
     route_host: footnote.awsos2.americancentury.com
-    
+
 - name: Create fund-service application
   include_role:
     name: springboot-application
@@ -22,7 +22,7 @@
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-fund-service
     git_ref: develop
     route_host: fund.awsos2.americancentury.com
-    
+
 - name: Create userpreference-service application
   include_role:
     name: springboot-application
