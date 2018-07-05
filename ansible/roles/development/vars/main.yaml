@@ -1,4 +1,5 @@
 ---
+environment: development
 openshift_project_name: itweb-development
 openshift_project_display_name: 'ITWEB - Development'
 openshift_project_description: 'The development namespace for ITWEB applications'
