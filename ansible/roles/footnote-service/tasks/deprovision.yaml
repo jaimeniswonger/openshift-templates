@@ -1,4 +1,3 @@
 ---
-- include_tasks: uninstall-application.yaml
-
-#- include_tasks: uninstall-pipeline.yaml
+- include_tasks: delete-application.yaml
+- include_tasks: delete-pipeline.yaml

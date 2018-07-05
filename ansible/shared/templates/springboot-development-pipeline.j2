@@ -1,0 +1,198 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: itweb-development-pipeline
+  annotations:
+    description: A template for creating development pipelines for ITWEB
+    iconClass: icon-jenkins
+    tags: pipeline, jenkins, git, itweb
+objects:
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: {{ app_name }}-{{ environment }}-pipeline
+    labels:
+      app: {{ app_name }}
+      env: {{ environment }}
+  spec:
+    runPolicy: Serial
+    strategy:
+      jenkinsPipelineStrategy:
+        jenkinsfile: >
+          pipeline {
+            agent { node { label 'maven' } }
+            stages {
+              stage('Fetch Source') {
+                steps {
+                  git credentialsId: 'itweb-git-credentials', url: '{{ git_url }}', branch: '{{ git_ref }}'
+                }
+              }
+              
+              stage('Run Tests') {
+                parallel {
+              
+                  stage('Unit Testing') {
+                    steps {
+                      configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh("mvn -s $MAVEN_SETTINGS clean test -P unit-tests")
+                      }
+                    }
+                  }
+          
+                  stage('Integration Testing') {
+                    steps {
+                      configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh("mvn -s $MAVEN_SETTINGS test -P integration-tests")
+                      }
+                    }
+                  }   
+                }
+              }
+              
+              stage('Build Application') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS deploy -DskipTests")
+                  }
+                }
+              }
+          
+              stage('Build Image') {
+                steps {
+                  script {
+                    def pom = readMavenPom file: 'pom.xml'
+                    def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
+                    def artifactId = pom.getArtifactId()
+                    //def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
+                    
+                    // USE THE GIT COMMIT ID AS THE VERSION
+                    def version = sh (
+                      script: 'git rev-parse --short=10 HEAD',
+                      returnStdout: true
+                    ).trim()
+                  
+                    openshiftBuild(namespace: '{{ openshift_project_name }}', bldCfg: '{{ app_name }}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                    openshiftBuild(namespace: '{{ openshift_project_name }}', bldCfg: '{{ app_name }}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                  }
+                }
+              }
+              
+              stage('Aqua Scan') {
+                agent { node { label 'aqua' } }
+                steps {
+                  script {
+                      
+                    // Login
+                    withCredentials([usernamePassword(credentialsId: 'aqua-credentials', usernameVariable: 'AQUA_USERNAME', passwordVariable: 'AQUA_PASSWORD')]) {
+  
+                      def username = env.AQUA_USERNAME
+                      def password = env.AQUA_PASSWORD
+                      def aquaScannerUrl = "http://aqua-web.aqua-security.svc:8080"
+                      def aquaRegistryName = "OpenShiftRegistry"
+                      
+                      def token = sh(
+                              script: "curl -v -X POST \
+                                          ${aquaScannerUrl}/api/v1/login \
+                                          -H 'Cache-Control: no-cache' \
+                                          -H 'Content-Type: application/json' \
+                                          -d '{\"id\": \"${username}\",\"password\": \"${password}\"}' | jq -r '.[\"token\"]'",
+                              returnStdout: true
+                          ).trim()
+                          
+                      // Start Scan
+                      sh (
+                        script: "curl -s -X POST \
+                            ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/{{ openshift_project_name }}/{{ app_name }}/scan \
+                            -H 'Authorization: Bearer ${token}' \
+                            -H 'Cache-Control: no-cache'"
+                      )
+  
+                      // Wait for scan to complete        
+                      timeout(5) {
+                          waitUntil {
+                              def status = sh (
+                                    script: "curl -s -X GET \
+                                      ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/{{ openshift_project_name }}/{{ app_name }}/status \
+                                      -H 'Authorization: Bearer ${token}' \
+                                      -H 'Cache-Control: no-cache' | jq -r '.[\"status\"]'",
+                                    returnStdout: true
+                              ).trim()
+                              sh ("echo ${status}")
+                              return (status == "Scanned")
+                          }
+                      }
+                        
+                      // Get scan results
+                      def disallowed = sh (
+                          script: "curl -s -X GET \
+                              ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/{{ openshift_project_name }}/{{ app_name }}/scan_result \
+                              -H 'Authorization: Bearer ${token}' \
+                              -H 'Cache-Control: no-cache' | jq -r '.[\"disallowed\"]'",
+                          returnStdout: true
+                      ).trim().toBoolean()
+                        
+                      sh ("echo 'Image disallowed by Aqua Scanner: ${disallowed}'")
+                    
+                      if (disallowed) {
+                          sh ("exit 1")
+                      }
+                    }     
+                  }
+                }
+              }
+                          
+              stage('Deploy') {
+                steps {
+                  openshiftDeploy(namespace: '{{ openshift_project_name }}', depCfg: '{{ app_name }}')
+                }
+              }
+              
+              stage('Nexus IQ') {
+                steps {
+                  nexusPolicyEvaluation failBuildOnNetworkError: false, iqApplication: 'itweb-poc-ms-{{ app_name }}', iqStage: 'build', jobCredentialsId: ''
+                }
+              }
+                  
+              stage('Checkmarx Scan') {
+                steps {
+                  step([$class: 'CxScanBuilder',
+                    credentialsId: 'aca1b52b-9419-45bc-87b0-3cc0a83bd41e',
+                    excludeOpenSourceFolders: '',
+                    exclusionsSetting: 'global',
+                    failBuildOnNewResults: false,
+                    failBuildOnNewSeverity: 'HIGH',
+                    fullScanCycle: 10,
+                    groupId: '67d89c60-4c9a-4f6d-8f90-7f819e27f89c',
+                    includeOpenSourceFolders: '',
+                    osaArchiveIncludePatterns: '*.zip, *.war, *.ear, *.tgz',
+                    preset: '36',
+                    projectName: '{{ app_name }}',
+                    sourceEncoding: '1',
+                    vulnerabilityThresholdResult: 'FAILURE',
+                    waitForResultsEnabled: true])
+                }
+              }
+          
+              stage('Contract Testing') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host={{ app_name }}.{{ openshift_project_name }}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080")
+                  }
+                }
+              }
+              
+              stage('SonarQube') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
+                  }
+                }
+              }
+            }
+          }
+      type: JenkinsPipeline
+    triggers:
+      - generic:
+          secret: {{ app_name }}-{{ openshift_project_name }}
+        type: Generic

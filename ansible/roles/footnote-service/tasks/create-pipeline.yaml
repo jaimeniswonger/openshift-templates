@@ -1,0 +1,3 @@
+---
+# PIPELINE
+- include_tasks: shared/tasks/openshift/create-{{ environment }}-pipeline.yaml
