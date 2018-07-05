@@ -5,11 +5,11 @@
 - include_tasks: shared/tasks/openshift/create-openshift-project.yaml
 - include_tasks: shared/tasks/openshift/create-bootstrap-config.yaml
 
-- include_role:
-    name: footnote-service
-
 #- include_role:
-#   name: fund-service
+#    name: footnote-service
+#
+#- include_role:
+#    name: fund-service
 #
 #- include_role:
 #    name: userpreference-service
@@ -17,13 +17,13 @@
 #- include_role:
 #    name: watchlist-service
 
-#  tasks:
-#  - name: Create edge application
-#    include_role:
-#     name: springboot-application
-#    vars:
-#      app_name: edge
-#      git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-edge
-#      git_ref: develop
-#      route_host: edge.awsos2.americancentury.com
-#      itweb_environment: development
+  tasks:
+  - name: Create edge application
+    include_role:
+      name: springboot-application
+    vars:
+      app_name: edge
+      git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-edge
+      git_ref: develop
+      route_host: edge.awsos2.americancentury.com
+      itweb_environment: development
