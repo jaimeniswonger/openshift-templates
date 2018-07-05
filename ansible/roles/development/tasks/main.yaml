@@ -19,10 +19,10 @@
 
 - name: Create edge application
   include_role:
-    name: springboot-application
+   name: springboot-application
   vars:
     app_name: edge
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-edge
     git_ref: develop
     route_host: edge.awsos2.americancentury.com
-    environment: development
+    itweb_environment: development
