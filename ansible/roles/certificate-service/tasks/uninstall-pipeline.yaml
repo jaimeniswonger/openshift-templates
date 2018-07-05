@@ -1,3 +1,0 @@
----
-- name: Uninstall {{ app_name }}-pipeline 
-  action: command oc delete bc {{ app_name }}-pipeline -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}  

@@ -1,3 +1,0 @@
----
-- include_tasks: uninstall-application.yaml
-- include_tasks: uninstall-pipeline.yaml
