@@ -63,8 +63,8 @@ objects:
                     }
 
                     // Need these set for tag and push -- how should we set these?
-                    sh("git config --global user.name '{{ openshift_project_admin_user }}'")
-                    sh("git config --global user.email '{{ openshift_project_admin_user }}@keyholesoftware.com'")
+                    sh("git config --global user.name '{{ openshift_username }}'")
+                    sh("git config --global user.email '{{ openshift_username }}@americancentury.com'")
 
                     withCredentials([sshUserPrivateKey(credentialsId: 'git-private-key', keyFileVariable: 'KEYFILE', passphraseVariable: 'PASSPHRASE', usernameVariable: 'USERNAME')]) {
                       sshagent(['git-private-key']) {

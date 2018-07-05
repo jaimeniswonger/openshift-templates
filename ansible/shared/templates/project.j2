@@ -10,7 +10,7 @@ objects:
     annotations:
       openshift.io/description: {{ openshift_project_description }}
       openshift.io/display-name: {{ openshift_project_display_name }}
-      openshift.io/requester: {{ openshift_project_admin_user }}
+      openshift.io/requester: {{ openshift_username }}
     creationTimestamp: null
     name: {{ openshift_project_name }}
   spec: {}
@@ -66,8 +66,8 @@ objects:
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
-    name: admin
+    name: {{ openshift_username }}
   subjects:
   - apiGroup: rbac.authorization.k8s.io
     kind: User
-    name: {{ openshift_project_admin_user }}
+    name: {{ openshift_username }}

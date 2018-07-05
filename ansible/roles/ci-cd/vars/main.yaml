@@ -2,5 +2,5 @@
 openshift_project_name: itweb-ci-cd
 openshift_project_display_name: 'ITWEB - CI/CD'
 openshift_project_description: 'The namespace for ITWEB CI/CD applications and pipelines'
-openshift_project_admin_user: h76
+#openshift_project_admin_user: admin
 autostart_pipeline: true
