@@ -5,8 +5,8 @@
 - include_tasks: shared/tasks/openshift/create-openshift-project.yaml
 - include_tasks: shared/tasks/openshift/create-bootstrap-config.yaml
 
-#- include_role:
-#    name: footnote-service
+- include_role:
+    name: footnote-service
 
 #- include_role:
 #   name: fund-service
