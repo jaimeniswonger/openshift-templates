@@ -1,3 +1,11 @@
+- name: Delete edge application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: edge
+    itweb_environment: development
+
 - include_role:
     name: common
     tasks_from: deprovision
