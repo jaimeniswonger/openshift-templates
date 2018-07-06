@@ -3,3 +3,4 @@ app_name: itweb-nexus
 git_url: ssh://APKAIYMS5Y3AMAIY4L2A@git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-config-service
 git_ref: develop
 nexus_base_image: sonatype/nexus3:3.12.1
+volume_capacity: 5Gi

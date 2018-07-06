@@ -106,8 +106,9 @@ objects:
         securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
-        - emptyDir: {}
-          name: {{ app_name }}-data
+        - name: {{ app_name }}-data
+          persistentVolumeClaim:
+            claimName: {{ app_name }}-data
     test: false
     triggers:
     - type: ConfigChange
