@@ -226,9 +226,9 @@ objects:
         restartPolicy: Always
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        volumes:
-        - name: {{ app_name }}
-          emptyDir: {}
+#        volumes:
+#        - name: {{ app_name }}
+#          emptyDir: {}
         #  persistentVolumeClaim:
         #    claimName: {{ app_name }}
     triggers:
