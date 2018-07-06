@@ -3,13 +3,11 @@ kind: DeploymentConfig
 metadata:
   labels:
     app: {{ app_name }}
-    deploymentconfig: {{ app_name }}-postgresql
   name: {{ app_name }}-postgresql
 spec:
   replicas: 1
   selector:
-    app: {{ app_name }}
-    deploymentconfig: {{ app_name }}-postgresql
+    name: {{ app_name }}-postgresql
   strategy:
     recreateParams:
       timeoutSeconds: 600
@@ -19,7 +17,7 @@ spec:
     metadata:
       labels:
         app: {{ app_name }}
-        deploymentconfig: {{ app_name }}-postgresql
+        name: {{ app_name }}-postgresql
     spec:
       containers:
       - env:
@@ -85,3 +83,20 @@ spec:
         namespace: openshift
     type: ImageChange
   - type: ConfigChange
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ app_name }}-postgresql
+  labels:
+    app: {{ app_name }}
+spec:
+  ports:
+  - name: postgresql
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    name: {{ app_name }}-postgresql
+  sessionAffinity: None
+  type: ClusterIP

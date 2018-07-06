@@ -1,245 +1,195 @@
-kind: Template
+# SERVICE
 apiVersion: v1
+kind: Service
+metadata:
+  name: {{ app_name }}
+  labels:
+    app: {{ app_name }}
+spec:
+  ports:
+  - name: sonarqube
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: {{ app_name }}
+    deploymentconfig: {{ app_name }}
+  sessionAffinity: None
+  type: ClusterIP
+---
+# ROUTE
+apiVersion: v1
+kind: Route
 metadata:
   annotations:
-    description: The SonarQube OpenShift template
-    tags: instant-app,sonarqube
+    description: Route for SonarQube's http service.
   name: {{ app_name }}
-message: "Login to SonarQube with the default admin user: admin/admin"
-objects:
-
-# SERVICES
-- apiVersion: v1
-  kind: Service
-  metadata:
+  labels:
+    app: {{ app_name }}
+spec:
+  host: {{ route_host }}
+  to:
+    kind: Service
     name: {{ app_name }}
-    labels:
-      app: {{ app_name }}
-  spec:
-    ports:
-    - name: sonarqube
-      port: 9000
-      protocol: TCP
-      targetPort: 9000
-    selector:
-      app: {{ app_name }}
-      deploymentconfig: {{ app_name }}
-    sessionAffinity: None
-    type: ClusterIP
-
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: {{ app_name }}-postgresql
-    labels:
-      app: {{ app_name }}
-  spec:
-    ports:
-    - name: postgresql
-      port: 5432
-      protocol: TCP
-      targetPort: 5432
-    selector:
-      app: {{ app_name }}
-      deploymentconfig: {{ app_name }}-postgresql
-    sessionAffinity: None
-    type: ClusterIP
-
-# ROUTE
-- apiVersion: v1
-  kind: Route
-  metadata:
-    annotations:
-      description: Route for SonarQube's http service.
-    name: {{ app_name }}
-    labels:
-      app: {{ app_name }}
-  spec:
-    host: {{ route_host }}
-    to:
-      kind: Service
-      name: {{ app_name }}
-
-# PERSISTENT VOLUME CLAIM      
-#- apiVersion: v1
-#  kind: PersistentVolumeClaim
-#  metadata:
-#    name: {{ app_name }}
-#    labels:
-#      app: {{ app_name }}
-#  spec:
-#    accessModes:
-#    - ReadWriteMany
-#    resources:
-#      requests:
-#        storage: {{ volume_capacity }}
-
+---
 # IMAGE STREAM
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    annotations:
-    labels:
-      app: {{ app_name }}
-    name: {{ app_name }}
-  spec:
-    tags:
-      - annotations:
-          description: The Sonarqube image for ITWEB
-          tags: {{ app_name }}
-
-# BUILD CONFIGS
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
-    name: {{ app_name }}
-    labels:
-      app: {{ app_name }}
-  spec:
-    strategy:
-      dockerStrategy:
-      type: Docker
-    source:
-      type: Dockerfile
-      dockerfile: |
-        FROM {{ sonarqube_base_image }}
-        USER root
-        
-        RUN set -x \
-         && cd $SONARQUBE_HOME/extensions/plugins/ \
-         && wget --no-verbose --no-check-certificate https://download.checkmarx.com/{{ checkmarx_sast_version }}/Plugins/Sonar-{{ checkmarx_plugin_version }}.zip \
-         && unzip Sonar-{{ checkmarx_plugin_version }}.zip \
-         && rm Sonar-{{ checkmarx_plugin_version }}.zip*
-        
-        RUN chown -R sonarqube:sonarqube $SONARQUBE_HOME
-        RUN chown -R sonarqube $SONARQUBE_HOME
-        RUN chgrp -R 0 $SONARQUBE_HOME
-        RUN chmod -R g+rw $SONARQUBE_HOME
-        RUN find "$SONARQUBE_HOME" -type d -exec chmod g+x {} +
-        
-        USER sonarqube
-        
-        ENTRYPOINT java -jar lib/sonar-application-$SONAR_VERSION.jar \
-          -Dsonar.log.console=true \
-          -Dsonar.jdbc.username="$SONARQUBE_JDBC_USERNAME" \
-          -Dsonar.jdbc.password="$SONARQUBE_JDBC_PASSWORD" \
-          -Dsonar.jdbc.url="$SONARQUBE_JDBC_URL" \
-          -Dsonar.security.realm="$SONARQUBE_SECURITY_REALM" \
-          -Dsonar.security.savePassword="$SONARQUBE_SECURITY_SAVEPASSWORD" \
-          -Dldap.bindDn="$SONARQUBE_LDAP_BINDDN" \
-          -Dldap.bindPassword="$SONARQUBE_LDAP_BINDPASSWORD" \
-          -Dldap.url="$SONARQUBE_LDAP_URL" \
-          -Dldap.user.baseDn="$SONARQUBE_LDAP_USER_BASEDN" \
-          -Dldap.user.request="$SONARQUBE_LDAP_USER_REQUEST" \
-          -Dldap.user.realNameAttribute="$SONARQUBE_LDAP_USER_REALNAMEATTRIBUTE" \
-          -Dldap.group.baseDn="$SONARQUBE_LDAP_GROUP_BASEDN" \
-          -Dldap.group.request="$SONARQUBE_LDAP_GROUP_REQUEST" \
-          -Dldap.group.idAttribute="$SONARQUBE_LDAP_GROUP_IDATTRIBUTE" \
-          -Dsonar.ce.javaOpts="$SONARQUBE_CE_JVM_OPTS" \
-          -Dsonar.web.javaOpts="$SONARQUBE_WEB_JVM_OPTS" \
-          -Dsonar.web.javaAdditionalOpts="-Djava.security.egd=file:/dev/./urandom" \
-          "$@"
-    output:
-      to:
-        kind: ImageStreamTag
-        name: '{{ app_name }}:latest'
-    postCommit: {}
-    resources: {}
-    runPolicy: Serial
-    triggers: {}
-
+apiVersion: v1
+kind: ImageStream
+metadata:
+  annotations:
+  labels:
+    app: {{ app_name }}
+  name: {{ app_name }}
+spec:
+  tags:
+    - annotations:
+        description: The Sonarqube image for ITWEB
+        tags: {{ app_name }}
+---
+# BUILD CONFIG
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: {{ app_name }}
+  labels:
+    app: {{ app_name }}
+spec:
+  strategy:
+    dockerStrategy:
+    type: Docker
+  source:
+    type: Dockerfile
+    dockerfile: |
+      FROM {{ sonarqube_base_image }}
+      USER root
+      
+      RUN set -x \
+       && cd $SONARQUBE_HOME/extensions/plugins/ \
+       && wget --no-verbose --no-check-certificate https://download.checkmarx.com/{{ checkmarx_sast_version }}/Plugins/Sonar-{{ checkmarx_plugin_version }}.zip \
+       && unzip Sonar-{{ checkmarx_plugin_version }}.zip \
+       && rm Sonar-{{ checkmarx_plugin_version }}.zip*
+      
+      RUN chown -R sonarqube:sonarqube $SONARQUBE_HOME
+      RUN chown -R sonarqube $SONARQUBE_HOME
+      RUN chgrp -R 0 $SONARQUBE_HOME
+      RUN chmod -R g+rw $SONARQUBE_HOME
+      RUN find "$SONARQUBE_HOME" -type d -exec chmod g+x {} +
+      
+      USER sonarqube
+      
+      ENTRYPOINT java -jar lib/sonar-application-$SONAR_VERSION.jar \
+        -Dsonar.log.console=true \
+        -Dsonar.jdbc.username="$SONARQUBE_JDBC_USERNAME" \
+        -Dsonar.jdbc.password="$SONARQUBE_JDBC_PASSWORD" \
+        -Dsonar.jdbc.url="$SONARQUBE_JDBC_URL" \
+        -Dsonar.security.realm="$SONARQUBE_SECURITY_REALM" \
+        -Dsonar.security.savePassword="$SONARQUBE_SECURITY_SAVEPASSWORD" \
+        -Dldap.bindDn="$SONARQUBE_LDAP_BINDDN" \
+        -Dldap.bindPassword="$SONARQUBE_LDAP_BINDPASSWORD" \
+        -Dldap.url="$SONARQUBE_LDAP_URL" \
+        -Dldap.user.baseDn="$SONARQUBE_LDAP_USER_BASEDN" \
+        -Dldap.user.request="$SONARQUBE_LDAP_USER_REQUEST" \
+        -Dldap.user.realNameAttribute="$SONARQUBE_LDAP_USER_REALNAMEATTRIBUTE" \
+        -Dldap.group.baseDn="$SONARQUBE_LDAP_GROUP_BASEDN" \
+        -Dldap.group.request="$SONARQUBE_LDAP_GROUP_REQUEST" \
+        -Dldap.group.idAttribute="$SONARQUBE_LDAP_GROUP_IDATTRIBUTE" \
+        -Dsonar.ce.javaOpts="$SONARQUBE_CE_JVM_OPTS" \
+        -Dsonar.web.javaOpts="$SONARQUBE_WEB_JVM_OPTS" \
+        -Dsonar.web.javaAdditionalOpts="-Djava.security.egd=file:/dev/./urandom" \
+        "$@"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: '{{ app_name }}:latest'
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  triggers: {}
+---
 # DEPLOYMENT CONFIG
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    labels:
-      app: {{ app_name }}
-      deploymentconfig: {{ app_name }}
-    name: {{ app_name }}
-  spec:
-    replicas: 1
-    selector:
-      app: {{ app_name }}
-      deploymentconfig: {{ app_name }}
-    strategy:
-      resources:
-            limits:
-              cpu: {{ cpu_limit }}
-              memory: {{ memory_limit }}
-      rollingParams:
-        intervalSeconds: 1
-        maxSurge: 25%
-        maxUnavailable: 25%
-        timeoutSeconds: 600
-        updatePeriodSeconds: 1
-      type: Rolling
-    template:
-      metadata:
-        labels:
-          app: {{ app_name }}
-          deploymentconfig: {{ app_name }}
-      spec:
-        containers:
-        - env:
-          - name: SONARQUBE_JDBC_PASSWORD
-            value: {{ sonarqube_postgres_password }}
-          - name: SONARQUBE_JDBC_URL
-            value: jdbc:postgresql://{{ app_name }}-postgresql/sonar
-          - name: SONARQUBE_JDBC_USERNAME
-            value: {{ sonarqube_postgres_username }}
-          image: {{ openshift_project_name }}/{{ app_name }}:latest
-          imagePullPolicy: Always
-          name: sonarqube
-          ports:
-          - containerPort: 9000
-            protocol: TCP
-          livenessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            successThreshold: 1
-            httpGet:
-              port: 9000
-              path: /
-            timeoutSeconds: 5
-          readinessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            successThreshold: 1
-            httpGet:
-              port: 9000
-              path: /
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 200m
-              memory: 1Gi
-            limits:
-              cpu: 1
-              memory: 2Gi
-          terminationMessagePath: /dev/termination-log
-#          volumeMounts:
-#          - mountPath: /opt/sonarqube/data
-#            name: {{ app_name }}
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-#        volumes:
-#        - name: {{ app_name }}
-#          emptyDir: {}
-        #  persistentVolumeClaim:
-        #    claimName: {{ app_name }}
-    triggers:
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - sonarqube
-        from:
-          kind: ImageStreamTag
-          name: {{ app_name }}:latest
-          namespace: {{ openshift_project_name }}
-        lastTriggeredImage: ""
-      type: ImageChange
-    - type: ConfigChange
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: {{ app_name }}
+    deploymentconfig: {{ app_name }}
+  name: {{ app_name }}
+spec:
+  replicas: 1
+  selector:
+    app: {{ app_name }}
+    deploymentconfig: {{ app_name }}
+  strategy:
+    resources:
+          limits:
+            cpu: {{ cpu_limit }}
+            memory: {{ memory_limit }}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: {{ app_name }}
+        deploymentconfig: {{ app_name }}
+    spec:
+      containers:
+      - env:
+        - name: SONARQUBE_JDBC_URL
+          value: jdbc:postgresql://{{ app_name }}-postgresql/sonar
+        - name: SONARQUBE_JDBC_PASSWORD
+          value: {{ sonarqube_postgres_password }}
+        - name: SONARQUBE_JDBC_USERNAME
+          value: {{ sonarqube_postgres_username }}
+        image: {{ openshift_project_name }}/{{ app_name }}:latest
+        imagePullPolicy: Always
+        name: sonarqube
+        ports:
+        - containerPort: 9000
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          successThreshold: 1
+          httpGet:
+            port: 9000
+            path: /
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          successThreshold: 1
+          httpGet:
+            port: 9000
+            path: /
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 1
+            memory: 2Gi
+        terminationMessagePath: /dev/termination-log
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  triggers:
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - sonarqube
+      from:
+        kind: ImageStreamTag
+        name: {{ app_name }}:latest
+        namespace: {{ openshift_project_name }}
+      lastTriggeredImage: ""
+    type: ImageChange
+  - type: ConfigChange

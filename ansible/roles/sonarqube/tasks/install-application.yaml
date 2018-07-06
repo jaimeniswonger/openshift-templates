@@ -12,6 +12,6 @@
   changed_when: no
   when: app_check_result.stdout == ""
 
-- name: Install {{ app_name }} application 
-  action: command bash -c "oc process -f {{ mktemp.stdout }}/{{ app_name }}-application.yaml | oc create -f - -n {{ openshift_project_name }}"
+- name: Create {{ app_name }} application 
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-application.yaml -n {{ openshift_project_name }}"
   when: app_check_result.stdout == ""
