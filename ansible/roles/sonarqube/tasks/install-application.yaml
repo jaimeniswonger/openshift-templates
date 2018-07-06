@@ -1,6 +1,6 @@
 ---
 - name: Check for existence of application labeled app={{ app_name }}
-  action: command oc get all -l app={{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  action: command oc get dc {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
   register: app_check_result
   
 #- debug: var=app_check_result
