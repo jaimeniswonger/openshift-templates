@@ -61,18 +61,18 @@ objects:
       name: {{ app_name }}
 
 # PERSISTENT VOLUME CLAIM      
-- apiVersion: v1
-  kind: PersistentVolumeClaim
-  metadata:
-    name: {{ app_name }}
-    labels:
-      app: {{ app_name }}
-  spec:
-    accessModes:
-    - ReadWriteMany
-    resources:
-      requests:
-        storage: {{ volume_capacity }}
+#- apiVersion: v1
+#  kind: PersistentVolumeClaim
+#  metadata:
+#    name: {{ app_name }}
+#    labels:
+#      app: {{ app_name }}
+#  spec:
+#    accessModes:
+#    - ReadWriteMany
+#    resources:
+#      requests:
+#        storage: {{ volume_capacity }}
 
 - apiVersion: v1
   kind: PersistentVolumeClaim
@@ -234,16 +234,16 @@ objects:
               cpu: 1
               memory: 2Gi
           terminationMessagePath: /dev/termination-log
-          volumeMounts:
-          - mountPath: /opt/sonarqube/data
-            name: {{ app_name }}
+#          volumeMounts:
+#          - mountPath: /opt/sonarqube/data
+#            name: {{ app_name }}
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        volumes:
-        - name: {{ app_name }}
-          emptyDir: {}
+#        volumes:
+#        - name: {{ app_name }}
+#          emptyDir: {}
         #  persistentVolumeClaim:
         #    claimName: {{ app_name }}
     triggers:
