@@ -219,9 +219,9 @@ objects:
               cpu: 1
               memory: 2Gi
           terminationMessagePath: /dev/termination-log
-          volumeMounts:
-          - mountPath: /opt/sonarqube/data
-            name: {{ app_name }}
+#          volumeMounts:
+#          - mountPath: /opt/sonarqube/data
+#            name: {{ app_name }}
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
