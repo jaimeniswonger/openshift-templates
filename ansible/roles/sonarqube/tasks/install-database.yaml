@@ -1,6 +1,6 @@
 ---
-- name: Check for existence of database by label app={{ app_name }}-postgresql
-  action: command oc get dc -l app={{ app_name }}-postgresql -o name --ignore-not-found -n {{ openshift_project_name }}
+- name: Check for existence of database named {{ app_name }}-postgresql
+  action: command oc get dc {{ app_name }}-postgresql -o name --ignore-not-found -n {{ openshift_project_name }}
   register: app_check_result
   
 #- debug: var=app_check_result
