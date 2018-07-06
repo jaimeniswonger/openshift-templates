@@ -4,6 +4,7 @@
 
 - include_tasks: shared/tasks/openshift/create-openshift-project.yaml
 - include_tasks: shared/tasks/openshift/create-bootstrap-config.yaml
+- include_tasks: create-rolebindings.yaml
 
 - name: Create certificate-service application
   include_role:
