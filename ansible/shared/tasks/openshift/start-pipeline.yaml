@@ -1,8 +1,8 @@
 ---
-- name: Check if pipeline labeled app={{ app_name }} and env={{ itweb_environment }} has already been run
-  action: command oc get builds -l app={{ app_name }},env={{ itweb_environment }} -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}
+- name: Check if pipeline labeled app={{ app_name }} and namespace={{ openshift_project_name }} has already been run
+  action: command oc get builds -l app={{ app_name }},namespace={{ openshift_project_name }} -o name --ignore-not-found -n {{ openshift_ci_cd_project_name }}
   register: pipeline_already_run_result
   
-- name: Start {{ app_name }}-{{ itweb_environment }}-pipeline 
-  action: command oc start-build {{ app_name }}-{{ itweb_environment }}-pipeline -n {{ openshift_ci_cd_project_name }}
+- name: Start {{ app_name }}-{{ openshift_project_name }}-pipeline 
+  action: command oc start-build {{ app_name }}-{{ openshift_project_name }}-pipeline -n {{ openshift_ci_cd_project_name }}
   when: pipeline_already_run_result.stdout == ""

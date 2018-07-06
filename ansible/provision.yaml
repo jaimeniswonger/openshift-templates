@@ -9,7 +9,8 @@
    - admin
    - ci-cd
    - infrastructure
-#  - development
+   - development
+#  - release
 #  - production
 
   post_tasks:

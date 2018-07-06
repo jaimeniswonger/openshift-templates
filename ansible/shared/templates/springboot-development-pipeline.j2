@@ -11,10 +11,10 @@ objects:
 - apiVersion: v1
   kind: BuildConfig
   metadata:
-    name: {{ app_name }}-{{ itweb_environment }}-pipeline
+    name: {{ app_name }}-{{ openshift_project_name }}-pipeline
     labels:
       app: {{ app_name }}
-      env: {{ itweb_environment }}
+      namespace: {{ openshift_project_name }}
   spec:
     runPolicy: Serial
     strategy:
