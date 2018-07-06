@@ -7,7 +7,7 @@
 
 - name: Create the persistent volume claim json from template
   template:
-    src: "{{ app_name }}-data-pvc.j2"
+    src: "{{ app_name }}-pvc.j2"
     dest: "{{ mktemp.stdout }}/{{ app_name }}-data-pvc.yaml"
   changed_when: no
   when: pvc_check_result.stdout == ""
