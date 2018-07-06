@@ -28,6 +28,8 @@ metadata:
     app: {{ app_name }}
 spec:
   host: {{ route_host }}
+  tls:
+    termination: edge
   to:
     kind: Service
     name: {{ app_name }}
@@ -170,17 +172,23 @@ spec:
             path: /
           timeoutSeconds: 5
         resources:
-          requests:
-            cpu: 200m
-            memory: 1Gi
+#          requests:
+#            cpu: 200m
+#            memory: 1Gi
           limits:
-            cpu: 1
-            memory: 2Gi
+            cpu: {{ cpu_limit }}
+            memory: {{ memory_limit }}
         terminationMessagePath: /dev/termination-log
+        volumeMounts:
+          - mountPath: /opt/sonarqube/data
+            name: {{ app_name }}-1
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       securityContext: {}
       terminationGracePeriodSeconds: 30
+      volumes:
+        - emptyDir: {}
+          name: {{ app_name }}-1
   triggers:
   - imageChangeParams:
       automatic: true
