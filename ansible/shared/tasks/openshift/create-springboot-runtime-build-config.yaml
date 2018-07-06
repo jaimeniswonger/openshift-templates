@@ -7,14 +7,14 @@
 
 - name: Create build config json  named {{ app_name }}
   template:
-    src: "shared/templates/springboot-runtime-build-config.j2"
+    src: "../../shared/templates/springboot-runtime-build-config.j2"
     dest: "{{ mktemp.stdout }}/{{ app_name }}-springboot-runtime-build-config.yaml"
   changed_when: no
   when: object_check_result.stdout == "" and auto_tls_configure
 
 - name: Create build config json  named {{ app_name }}
   template:
-    src: "shared/templates/springboot-runtime-build-config-no-tls.j2"
+    src: "../../shared/templates/springboot-runtime-build-config-no-tls.j2"
     dest: "{{ mktemp.stdout }}/{{ app_name }}-springboot-runtime-build-config.yaml"
   changed_when: no
   when: object_check_result.stdout == "" and not auto_tls_configure
