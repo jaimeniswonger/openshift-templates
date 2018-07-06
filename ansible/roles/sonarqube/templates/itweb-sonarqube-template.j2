@@ -109,42 +109,60 @@ objects:
     labels:
       app: {{ app_name }}
   spec:
-    output:
-      to:
-        kind: ImageStreamTag
-        name: {{ app_name }}:latest
+    strategy:
+      dockerStrategy:
+      type: Docker
     source:
       type: Dockerfile
-      dockerfile: |-
+      dockerfile: |
         FROM {{ sonarqube_base_image }}
-        ENV SQ_CX_PLUGIN_VERSION=8.60.0 \
-            SQ_CX_SAST_VERSION=8.6.0
+        USER root
+        
+        ENV SQ_CX_PLUGIN_VERSION={{ checkmarx_plugin_version }} \
+            SQ_CX_SAST_VERSION={{ checkmarx_plugin_version }}
+        
         RUN set -x \
          && cd $SONARQUBE_HOME/extensions/plugins/ \
          && wget --no-verbose --no-check-certificate https://download.checkmarx.com/$SQ_CX_SAST_VERSION/Plugins/Sonar-$SQ_CX_PLUGIN_VERSION.zip \
          && unzip Sonar-$SQ_CX_PLUGIN_VERSION.zip \
-         && rm Sonar-$SQ_CX_PLUGIN_VERSION.zip* \
-         && chmod -R 777 $SONARQUBE_HOME \
-         && chown -R sonarqube:sonarqube $SONARQUBE_HOME
-         
-         USER sonarqube
-         
-         ENTRYPOINT ["./bin/run.sh"]
-    strategy:
-      type: Docker
-      dockerStrategy:
-        from:
-          kind: DockerImage
-          name: {{ sonarqube_base_image }}
-        env:
-        - name: SQ_CX_PLUGIN_VERSION
-          value: 8.60.0
-        - name: SQ_CX_SAST_VERSION
-          value: 8.6.0
-    triggers:
-    - type: ImageChange
-      imageChange: {}
-
+         && rm Sonar-$SQ_CX_PLUGIN_VERSION.zip*
+        
+        RUN chown -R sonarqube:sonarqube $SONARQUBE_HOME
+        RUN chown -R sonarqube $SONARQUBE_HOME
+        RUN chgrp -R 0 $SONARQUBE_HOME
+        RUN chmod -R g+rw $SONARQUBE_HOME
+        RUN find "$SONARQUBE_HOME" -type d -exec chmod g+x {} +
+        
+        USER sonarqube
+        
+        ENTRYPOINT java -jar lib/sonar-application-$SONAR_VERSION.jar \
+          -Dsonar.log.console=true \
+          -Dsonar.jdbc.username="$SONARQUBE_JDBC_USERNAME" \
+          -Dsonar.jdbc.password="$SONARQUBE_JDBC_PASSWORD" \
+          -Dsonar.jdbc.url="$SONARQUBE_JDBC_URL" \
+          -Dsonar.security.realm="$SONARQUBE_SECURITY_REALM" \
+          -Dsonar.security.savePassword="$SONARQUBE_SECURITY_SAVEPASSWORD" \
+          -Dldap.bindDn="$SONARQUBE_LDAP_BINDDN" \
+          -Dldap.bindPassword="$SONARQUBE_LDAP_BINDPASSWORD" \
+          -Dldap.url="$SONARQUBE_LDAP_URL" \
+          -Dldap.user.baseDn="$SONARQUBE_LDAP_USER_BASEDN" \
+          -Dldap.user.request="$SONARQUBE_LDAP_USER_REQUEST" \
+          -Dldap.user.realNameAttribute="$SONARQUBE_LDAP_USER_REALNAMEATTRIBUTE" \
+          -Dldap.group.baseDn="$SONARQUBE_LDAP_GROUP_BASEDN" \
+          -Dldap.group.request="$SONARQUBE_LDAP_GROUP_REQUEST" \
+          -Dldap.group.idAttribute="$SONARQUBE_LDAP_GROUP_IDATTRIBUTE" \
+          -Dsonar.ce.javaOpts="$SONARQUBE_CE_JVM_OPTS" \
+          -Dsonar.web.javaOpts="$SONARQUBE_WEB_JVM_OPTS" \
+          -Dsonar.web.javaAdditionalOpts="-Djava.security.egd=file:/dev/./urandom" \
+          "$@"
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'itweb-sonarqube:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers: {}
 # DEPLOYMENT CONFIGS
 - apiVersion: v1
   kind: DeploymentConfig
@@ -172,8 +190,6 @@ objects:
       type: Rolling
     template:
       metadata:
-        annotations:
-          openshift.io/container.sonarqube.image.entrypoint: '["./bin/run.sh"]'
         labels:
           app: {{ app_name }}
           deploymentconfig: {{ app_name }}
