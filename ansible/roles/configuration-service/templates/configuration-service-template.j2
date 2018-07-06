@@ -26,18 +26,6 @@ objects:
       app: {{ app_name }}
     creationTimestamp: null
   spec: {}
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    name: openjdk
-  spec:
-    tags:
-    - from:
-        kind: DockerImage
-        name: openjdk:8-jre-alpine
-      name: 8-jre-alpine
-      referencePolicy:
-        type: Source
 
 # BUILD CONFIG - builder
 - kind: BuildConfig
