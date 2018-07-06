@@ -13,6 +13,7 @@
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
     git_ref: develop
     route_host: certificate.awsos2.americancentury.com
+    auto_tls_configure: false
 
 - name: Create footnote-service application
   include_role:
