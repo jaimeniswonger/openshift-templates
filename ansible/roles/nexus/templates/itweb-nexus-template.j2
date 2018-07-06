@@ -108,9 +108,6 @@ objects:
         volumes:
         - emptyDir: {}
           name: {{ app_name }}-data
-#        - name: {{ app_name }}-data
-#          persistentVolumeClaim:
-#            claimName: {{ app_name }}
     test: false
     triggers:
     - type: ConfigChange
