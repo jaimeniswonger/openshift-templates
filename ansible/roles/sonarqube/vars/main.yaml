@@ -9,3 +9,4 @@ sonarqube_postgres_username: sonar
 sonarqube_postgres_password: changeme
 sonarqube_postgres_image_tag: postgresql:9.5
 checkmarx_plugin_version: 8.60.0
+checkmarx_sast_version: 8.6.0
