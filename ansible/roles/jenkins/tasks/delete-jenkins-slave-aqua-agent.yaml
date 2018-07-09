@@ -1,0 +1,3 @@
+---
+- name: Delete config map with label app={{ app_name }} in {{ openshift_project_name }}
+  action: command oc delete configmap -l app={{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
