@@ -89,7 +89,7 @@ objects:
                       def username = env.AQUA_USERNAME
                       def password = env.AQUA_PASSWORD
                       def aquaScannerUrl = "http://aqua-web.aqua-security.svc:8080"
-                      def aquaRegistryName = "OpenShift Registry"
+                      def aquaRegistryName = "OpenShift%20Registry"
                       
                       def token = sh(
                               script: "curl -v -X POST \
