@@ -1,8 +1,8 @@
 ---
-- name: Check if build labeled template=itweb-jenkins-base has already been run
-  action: command oc get builds -l template=itweb-jenkins-base -o name --ignore-not-found -n {{ openshift_project_name }}
+- name: Check if build labeled template=jenkins-slave-aqua-centos7 has already been run
+  action: command oc get builds -l template=jenkins-slave-aqua-centos7 -o name --ignore-not-found -n {{ openshift_project_name }}
   register: build_already_run_result
   
-- name: Start itweb-jenkins-base build
-  action: command oc start-build itweb-jenkins-base -n {{ openshift_project_name }}
+- name: Start jenkins-slave-aqua-centos7 build
+  action: command oc start-build jenkins-slave-aqua-centos7 -n {{ openshift_project_name }}
   when: build_already_run_result.stdout == ""
