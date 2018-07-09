@@ -1,0 +1,43 @@
+- name: Delete certificate-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: certificate-service
+
+- name: Delete footnote-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: footnote-service
+
+- name: Delete fund-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: fund-service
+
+- name: Delete userpreference-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: userpreference-service
+
+- name: Delete watchlist-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: watchlist-service
+
+- name: Delete edge application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: edge
+
+- include_tasks: shared/tasks/openshift/delete-openshift-project.yaml

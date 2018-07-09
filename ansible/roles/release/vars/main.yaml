@@ -1,0 +1,6 @@
+---
+openshift_project_name: itweb-release
+openshift_project_display_name: 'ITWEB - Release'
+openshift_project_description: 'The release namespace for ITWEB applications'
+autostart_pipeline: false
+openshift_ci_cd_project_name: itweb-ci-cd
