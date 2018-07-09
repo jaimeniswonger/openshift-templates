@@ -1,0 +1,237 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: itweb-development-pipeline
+  annotations:
+    description: A template for creating development pipelines for ITWEB
+    iconClass: icon-jenkins
+    tags: pipeline, jenkins, git, itweb
+objects:
+# BUILD CONFIG
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: {{ app_name }}-{{ openshift_project_name }}-pipeline
+    labels:
+      app: {{ app_name }}
+      namespace: {{ openshift_project_name }}
+  spec:
+    runPolicy: Serial
+    strategy:
+      jenkinsPipelineStrategy:
+        jenkinsfile: >
+          pipeline {
+            agent { node { label 'maven' } }
+            stages {
+              stage('Fetch Source') {
+                steps {
+                  git credentialsId: 'itweb-git-credentials', url: '{{ git_url }}', branch: '{{ git_ref }}'
+                }
+              }
+              
+              stage('Run Tests') {
+                parallel {
+              
+                  stage('Unit Testing') {
+                    steps {
+                      configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh("mvn -s $MAVEN_SETTINGS clean test -P unit-tests")
+                      }
+                    }
+                  }
+          
+                  stage('Integration Testing') {
+                    steps {
+                      configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                        sh("mvn -s $MAVEN_SETTINGS test -P integration-tests")
+                      }
+                    }
+                  }   
+                }
+              }
+              
+              stage('Quality Analysis') {
+                parallel {
+              
+                  stage('Nexus IQ') {
+                    steps {
+                      nexusPolicyEvaluation failBuildOnNetworkError: false, iqApplication: 'itweb-poc-ms-{{ app_name }}', iqStage: 'stage-release', jobCredentialsId: ''
+                    }
+                  }              
+              
+                  stage('Checkmarx Scan') {
+                    steps {
+                      step([$class: 'CxScanBuilder',
+                        credentialsId: 'aca1b52b-9419-45bc-87b0-3cc0a83bd41e',
+                        excludeOpenSourceFolders: '',
+                        exclusionsSetting: 'global',
+                        failBuildOnNewResults: false,
+                        failBuildOnNewSeverity: 'HIGH',
+                        fullScanCycle: 10,
+                        groupId: '67d89c60-4c9a-4f6d-8f90-7f819e27f89c',
+                        includeOpenSourceFolders: '',
+                        osaArchiveIncludePatterns: '*.zip, *.war, *.ear, *.tgz',
+                        preset: '36',
+                        projectName: '{{ app_name }}',
+                        sourceEncoding: '1',
+                        vulnerabilityThresholdResult: 'FAILURE',
+                        waitForResultsEnabled: true])
+                    }
+                  }
+                }
+              }
+              
+              stage('Sonarqube') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS sonar:sonar")
+                  }
+                }
+              }              
+              
+              stage('Build Application') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS deploy -DskipTests")
+                  }
+                }
+              }
+          
+              stage('Build Image') {
+                steps {
+                  script {
+                    def pom = readMavenPom file: 'pom.xml'
+                    def groupId = pom.getGroupId() != null ? pom.getGroupId() : pom.getParent().getGroupId()
+                    def artifactId = pom.getArtifactId()
+                    //def version = pom.getVersion() != null ? pom.getVersion() : pom.getParent().getVersion()
+                    
+                    // USE THE GIT COMMIT ID AS THE VERSION
+                    def version = sh (
+                      script: 'git rev-parse --short=10 HEAD',
+                      returnStdout: true
+                    ).trim()
+                  
+                    openshiftBuild(namespace: '{{ openshift_project_name }}', bldCfg: '{{ app_name }}-builder', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                    openshiftBuild(namespace: '{{ openshift_project_name }}', bldCfg: '{{ app_name }}', showBuildLogs: 'true', env: [[name:'MVN_GROUPID', value:"${groupId}"], [name:'MVN_ARTIFACTID', value:"${artifactId}"], [name:'MVN_VERSION', value:"${version}"]])
+                  }
+                }
+              }
+              
+              stage('Aqua Scan') {
+                agent { node { label 'aqua' } }
+                steps {
+                  script {
+                      
+                    // Login
+                    withCredentials([usernamePassword(credentialsId: 'aqua-credentials', usernameVariable: 'AQUA_USERNAME', passwordVariable: 'AQUA_PASSWORD')]) {
+  
+                      def username = env.AQUA_USERNAME
+                      def password = env.AQUA_PASSWORD
+                      def aquaScannerUrl = "http://aqua-web.aqua-security.svc:8080"
+                      def aquaRegistryName = "OpenShift%20Registry"
+                      
+                      def token = sh(
+                              script: "curl -v -X POST \
+                                          ${aquaScannerUrl}/api/v1/login \
+                                          -H 'Cache-Control: no-cache' \
+                                          -H 'Content-Type: application/json' \
+                                          -d '{\"id\": \"${username}\",\"password\": \"${password}\"}' | jq -r '.[\"token\"]'",
+                              returnStdout: true
+                          ).trim()
+                          
+                      // Start Scan
+                      sh (
+                        script: "curl -s -X POST \
+                            ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/{{ openshift_project_name }}/{{ app_name }}/scan \
+                            -H 'Authorization: Bearer ${token}' \
+                            -H 'Cache-Control: no-cache'"
+                      )
+  
+                      // Wait for scan to complete        
+                      timeout(5) {
+                          waitUntil {
+                              def status = sh (
+                                    script: "curl -s -X GET \
+                                      ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/{{ openshift_project_name }}/{{ app_name }}/status \
+                                      -H 'Authorization: Bearer ${token}' \
+                                      -H 'Cache-Control: no-cache' | jq -r '.[\"status\"]'",
+                                    returnStdout: true
+                              ).trim()
+                              sh ("echo ${status}")
+                              return (status == "Scanned")
+                          }
+                      }
+                        
+                      // Get scan results
+                      def disallowed = sh (
+                          script: "curl -s -X GET \
+                              ${aquaScannerUrl}/api/v1/scanner/registry/${aquaRegistryName}/image/{{ openshift_project_name }}/{{ app_name }}/scan_result \
+                              -H 'Authorization: Bearer ${token}' \
+                              -H 'Cache-Control: no-cache' | jq -r '.[\"disallowed\"]'",
+                          returnStdout: true
+                      ).trim().toBoolean()
+                        
+                      sh ("echo 'Image disallowed by Aqua Scanner: ${disallowed}'")
+                    
+                      if (disallowed) {
+                          sh ("exit 1")
+                      }
+                    }     
+                  }
+                }
+              }
+              
+              stage('Tag Source') {
+                steps {
+                  script {
+                    def imageSHA;
+                    openshift.withCluster() {
+                      openshift.withProject('{{ openshift_project_name }}') {
+                        // def istag = openshift.selector( "istag/{{ app_name }}:latest" ).object();
+                        // this is not ideal - would be nice to figure out how to get the istag directly
+                        def imageStream = openshift.selector( "is/{{ app_name }}" ).object();
+                        imageSHA = imageStream.status.tags[0].items[0].image.substring(7)
+                        echo "${imageSHA}"
+                      }
+                    }
+              
+                    // Need these set for tag and push -- how should we set these?
+                    sh("git config --global user.name 'awsos2.americancentury.com'")
+                    sh("git config --global user.email 'awsos2@americancentury.com'")
+                
+                    def gitURL = '{{ git_url }}'
+                    def splitURL = gitURL.split(/\\/\\//)
+                    def protocol = splitURL[0]
+                    def gitHost = splitURL[1]
+
+                    withCredentials([sshUserPrivateKey(credentialsId: 'itweb-git-credentials', keyFileVariable: 'KEYFILE', passphraseVariable: 'PASSPHRASE', usernameVariable: 'USERNAME')]) {
+                      sshagent(['itweb-git-credentials']) {
+                        sh("git tag -a " + imageSHA + " -m 'image built'")
+                        sh("git push " + protocol + "//$USERNAME" + "@" + gitHost + " --tags")
+                      }
+                    }                              
+                  }
+                }
+              }              
+          
+              stage('Deploy') {
+                steps {
+                  openshiftDeploy(namespace: '{{ openshift_project_name }}', depCfg: '{{ app_name }}')
+                }
+              }
+          
+         
+              stage('Contract Testing') {
+                steps {
+                  configFileProvider([configFile(fileId: 'itweb-maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh("mvn -s $MAVEN_SETTINGS test -P contract-tests -Daci.contract.testing.host={{ app_name }}.{{ openshift_project_name }}.svc -Daci.contract.testing.port=8080 -Dpactbroker.host=pact-broker.ci-cd.svc -Dpactbroker.port=8080")
+                  }
+                }
+              }
+            }
+          }
+      type: JenkinsPipeline
+    triggers:
+      - generic:
+          secret: {{ app_name }}-{{ openshift_project_name }}
+        type: Generic
