@@ -12,6 +12,8 @@
   vars:
     label: "app=jenkins"
 
+- include_tasks: delete-jenkins-slave-aqua-config-map.yaml
+
 - name: Include tasks for uninstalling the jenkins-slave-aqua-centos7 image
   include_tasks: shared/tasks/openshift/delete-by-label.yaml
   vars:
