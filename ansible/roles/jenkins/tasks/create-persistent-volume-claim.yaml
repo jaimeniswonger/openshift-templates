@@ -1,0 +1,17 @@
+---
+- name: Check for existence of a persistent volume named {{ app_name }}
+  action: command oc get pvc {{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: pvc_check_result
+  
+#- debug: var=pvc_check_result
+
+- name: Create the persistent volume claim json from template
+  template:
+    src: "{{ app_name }}-pvc.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-pvc.yaml"
+  changed_when: no
+  when: pvc_check_result.stdout == ""
+
+- name: Create a persistent volume claim named {{ app_name }}
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-pvc.yaml -n {{ openshift_project_name }}"
+  when: pvc_check_result.stdout == ""

@@ -1,0 +1,13 @@
+# PERSISTENT VOLUME CLAIM      
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: {{ app_name }}
+    labels:
+      app: {{ app_name }}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: {{ volume_capacity }}

@@ -90,20 +90,6 @@ objects:
       kind: Service
       name: {{ app_name }}
 
-# PERSISTENT VOLUME CLAIM      
-- apiVersion: v1
-  kind: PersistentVolumeClaim
-  metadata:
-    name: {{ app_name }}
-    labels:
-      app: {{ app_name }}
-  spec:
-    accessModes:
-    - ReadWriteOnce
-    resources:
-      requests:
-        storage: {{ volume_capacity }}
-
 # DEPLOYMENT CONFIG        
 - apiVersion: v1
   kind: DeploymentConfig
