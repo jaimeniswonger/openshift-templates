@@ -1,3 +1,6 @@
 ---
 - name: Add edit role to system:serviceaccount:{{openshift_ci_cd_project_name }}:jenkins in {{ openshift_project_name }}
-  action: command oc policy add-role-to-user edit system:serviceaccount:{{ openshift_ci_cd_project_name }}:jenkins -n {{ openshift_project_name }}  
+  action: command oc policy add-role-to-user edit system:serviceaccount:{{ openshift_ci_cd_project_name }}:jenkins -n {{ openshift_project_name }}
+
+- name: Add image-puller role to system:serviceaccounts:{{openshift_project_name }}:jenkins in {{ openshift_infra_project_name }}
+  action: command oc policy add-role-to-group system:image-puller system:serviceaccounts:{{ openshift_project_name }} -n {{ openshift_infra_project_name }}
