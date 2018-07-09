@@ -1,0 +1,49 @@
+####                                              
+#### CREATES THE jenkins-slave-aqua-centos7 IMAGE STREAM AND BUILD CONFIG
+####    - This is the slave for integrating with aqua
+apiVersion: v1
+kind: List
+items:
+# IMAGE STREAM
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: jenkins-slave-aqua-centos7
+    labels:
+      template: jenkins-slave-aqua-centos7
+  spec:
+    lookupPolicy:
+      local: false
+# BUILD CONFIG 
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: jenkins-slave-aqua-centos7
+    labels:
+      template: jenkins-slave-aqua-centos7
+  spec:
+    strategy:
+      dockerStrategy:
+      type: Docker
+    source:
+      type: Dockerfile
+      dockerfile: |
+        FROM openshift/jenkins-slave-maven-centos7
+        
+        USER root
+        
+        # Install jq
+        RUN curl -k -L https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 -o jq
+        RUN chmod +x jq
+        RUN mv jq /usr/local/bin
+        
+        # Back to the user in the FROM image...
+        USER 1001
+    output:
+      to:
+        kind: ImageStreamTag
+        name: 'jenkins-slave-aqua-centos7:latest'
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    triggers: {}
