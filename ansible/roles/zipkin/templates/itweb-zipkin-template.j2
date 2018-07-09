@@ -139,7 +139,7 @@ objects:
       app: {{ app_name }}
     name: {{ app_name }}
   spec:
-    host: ${ROUTE_HOST}
+    host: {{ route_host }}
     port:
       targetPort: 9411-tcp
     to:
