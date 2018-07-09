@@ -1,3 +1,10 @@
+- name: Delete certificate-service application
+  include_role:
+    name: springboot-application
+    tasks_from: deprovision
+  vars:
+    app_name: certificate-service
+
 - name: Delete footnote-service application
   include_role:
     name: springboot-application
