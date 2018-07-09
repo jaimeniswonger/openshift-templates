@@ -1,0 +1,15 @@
+---
+- name: Uninstalling the itweb-jenkins-base image
+  include_tasks: shared/tasks/openshift/delete-by-label.yaml
+  vars:
+    label: "template=itweb-jenkins-base"
+
+- name: Uninstalling the {{ app_name }} application
+  include_tasks: shared/tasks/openshift/delete-by-label.yaml
+  vars:
+    label: "app=jenkins"
+
+- name: Include tasks for uninstalling the jenkins-slave-aqua-centos7 image
+  include_tasks: shared/tasks/openshift/delete-by-label.yaml
+  vars:
+    label: "template=jenkins-slave-aqua-centos7"
