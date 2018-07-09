@@ -12,7 +12,7 @@
   vars:
     app_name: certificate-service
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-mock-certificate-api
-    git_ref: develop
+    git_ref: release/1.0.0
     route_host: certificate.awsos2.americancentury.com
     auto_tls_configure: false
 
@@ -22,7 +22,7 @@
   vars:
     app_name: footnote-service
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-footnote-service
-    git_ref: develop
+    git_ref: release/1.0.0
     route_host: footnote.awsos2.americancentury.com
 
 - name: Create fund-service application
@@ -31,7 +31,7 @@
   vars:
     app_name: fund-service
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-fund-service
-    git_ref: develop
+    git_ref: release/1.0.0
     route_host: fund.awsos2.americancentury.com
 
 - name: Create userpreference-service application
@@ -40,7 +40,7 @@
   vars:
     app_name: userpreference-service
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-userpreference-service
-    git_ref: develop
+    git_ref: release/1.0.0
     route_host: userpreference.awsos2.americancentury.com
 
 - name: Create watchlist-service application
@@ -49,7 +49,7 @@
   vars:
     app_name: watchlist-service
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/aci-itweb-watchlist-service
-    git_ref: develop
+    git_ref: release/1.0.0
     route_host: watchlist.awsos2.americancentury.com
 
 - name: Create edge application
@@ -58,5 +58,5 @@
   vars:
     app_name: edge
     git_url: ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/itweb-edge
-    git_ref: develop
+    git_ref: release/1.0.0
     route_host: edge.awsos2.americancentury.com
