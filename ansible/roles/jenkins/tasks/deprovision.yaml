@@ -4,6 +4,9 @@
   vars:
     label: "template=itweb-jenkins-base"
 
+- include_tasks: delete-service-account.yaml
+- include_tasks: delete-role-bindings.yaml
+
 - name: Uninstalling the {{ app_name }} application
   include_tasks: shared/tasks/openshift/delete-by-label.yaml
   vars:

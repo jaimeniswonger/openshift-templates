@@ -1,0 +1,17 @@
+---
+- name: Check for existence of a role binding named {{ app_name }}_edit
+  action: command oc get rolebinding {{ app_name }}_edit -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: rb_check_result
+  
+#- debug: var=rb_check_result
+
+- name: Create the role binding json from template
+  template:
+    src: "{{ app_name }}-role-bindings.j2"
+    dest: "{{ mktemp.stdout }}/{{ app_name }}-role-bindings.yaml"
+  changed_when: no
+  when: rb_check_result.stdout == ""
+
+- name: Create the role bindings for {{ app_name }}
+  action: command bash -c "oc create -f {{ mktemp.stdout }}/{{ app_name }}-role-bindings.yaml -n {{ openshift_project_name }}"
+  when: rb_check_result.stdout == ""

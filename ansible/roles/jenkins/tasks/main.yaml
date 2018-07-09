@@ -1,6 +1,8 @@
 ---
 - include_tasks: install-base-image.yaml
 - include_tasks: create-persistent-volume-claim.yaml
+- include_tasks: create-service-account.yaml
+- include_tasks: create-role-bindings.yaml
 - include_tasks: install-application.yaml
 - include_tasks: start-build.yaml
 - include_tasks: install-jenkins-slave-aqua-agent.yaml

@@ -186,30 +186,6 @@ objects:
       type: ImageChange
     - type: ConfigChange
 
-# SERVICE ACCOUNT    
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    annotations:
-      serviceaccounts.openshift.io/oauth-redirectreference.jenkins: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"{{ app_name }}"}}'
-    name: {{ app_name }}
-    labels:
-      app: {{ app_name }}
-
-# ROLE BINDING      
-- apiVersion: v1
-  groupNames: null
-  kind: RoleBinding
-  metadata:
-    name: {{ app_name }}_edit
-    labels:
-      app: {{ app_name }}
-  roleRef:
-    name: edit
-  subjects:
-  - kind: ServiceAccount
-    name: {{ app_name }}
-
 # SERVICE JNLP    
 - apiVersion: v1
   kind: Service
