@@ -1,0 +1,8 @@
+---
+- name: Check if build labeled app={{ app_name }} has already been run
+  action: command oc get builds -l app={{ app_name }} -o name --ignore-not-found -n {{ openshift_project_name }}
+  register: build_already_run_result
+  
+- name: Start {{ app_name }} build
+  action: command oc start-build {{ app_name }} -n {{ openshift_project_name }}
+  when: build_already_run_result.stdout == ""

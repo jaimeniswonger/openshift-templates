@@ -1,0 +1,8 @@
+---
+app_name: itweb-zipkin
+openshift_project_name: itweb-infra
+min_cpu: 300m
+max_cpu: 500m
+min_memory: 500Mi
+max_memory: 1Gi
+route_host: zipkin.awsos2.americancentury.com
