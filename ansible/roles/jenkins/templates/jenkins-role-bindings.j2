@@ -1,13 +1,13 @@
 # ROLE BINDING
-- apiVersion: v1
-  groupNames: null
-  kind: RoleBinding
-  metadata:
-    name: {{ app_name }}_edit
-    labels:
-      app: {{ app_name }}
-  roleRef:
-    name: edit
-  subjects:
-  - kind: ServiceAccount
-    name: {{ app_name }}
+apiVersion: v1
+groupNames: null
+kind: RoleBinding
+metadata:
+  name: {{ app_name }}_edit
+  labels:
+    app: {{ app_name }}
+roleRef:
+  name: edit
+subjects:
+- kind: ServiceAccount
+  name: {{ app_name }}
